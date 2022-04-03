@@ -1,4 +1,5 @@
 #include "../base/Logger.h"
+#include "../base/LogAsynAppender.h"
 #include <iostream>
 #include <memory>
 #include <stdio.h>
@@ -57,7 +58,7 @@ int main() {
 
     printf("pid = %d\n", getpid());
 
-    bench(true);
+    bench(false);
 
     return 0;
 }

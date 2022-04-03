@@ -16,7 +16,7 @@ void bench(const char* type)
     g_total = 0;
 
     int n = 1000 * 1000;
-    // int n = 1;
+    // int n = 5;
     const bool kLongLog = false;
     string empty = " ";
     string longStr(3000, 'X');
