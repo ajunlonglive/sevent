@@ -2,7 +2,9 @@
 #include "CurrentThread.h"
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include <sys/time.h>
 
 using namespace sevent;
@@ -19,7 +21,7 @@ const char *LogLevelName[Logger::LEVEL_SIZE] = {
 };
 time_t g_gmtOffsetSec = 0;
 bool g_showMicroSecond = false;
-//默认UTC+0,只影响格式化时间;例如 中国标准时间=UTC+8 setUTCOffset(8*3600)
+
 void setUTCOffset(time_t gmtOffsetSecond) {
     sevent::g_gmtOffsetSec = gmtOffsetSecond;
 }
@@ -74,8 +76,15 @@ void DefaultLogProcessor::beforeMsgToStream(LogEvent &logEv) {
     stream << ' ';
     //线程,后有空格" "
     stream << logEv.getThreadId();
-    // loglevel固定长度为6
+    //loglevel固定长度为6
     stream << StreamItem(LogLevelName[logEv.getLevel()], 6);
+    //errno
+    int errNumber = logEv.getErrno();
+    if (errNumber) {
+        thread_local char errnoBuf[512];
+        stream << strerror_r(errNumber, errnoBuf, sizeof(errnoBuf));
+        stream << "(errno=" << errNumber << ") ";
+    }
 }
 void DefaultLogProcessor::afterMsgToStream(LogEvent &logEv) {
     // - 源文件:行号
@@ -121,8 +130,8 @@ void DefaultLogProcessor::setShowMicroSecond(bool show) {
 /********************************************************************
  *                          LogEvent
  * ******************************************************************/
-LogEvent::LogEvent(const char *file, int line, Logger::Level level)
-    : file(file), line(line), level(level), time(Timestamp::now()) {
+LogEvent::LogEvent(const char *file, int line, Logger::Level level,int err)
+    : file(file), line(line), level(level),errNum(err), time(Timestamp::now()) {
     //参考muduo 5.2章:GCC的strrchr()对于字符串字面量可以在编译期求值
     const char *slash = strrchr(file, '/');
     if (slash)
@@ -135,7 +144,7 @@ LogEvent::~LogEvent() {
     Logger::instance().append(buf.begin(), buf.length());
     if (level == Logger::FATAL) {
         Logger::instance().flush();
-        // abort();
+        abort();
     }
     this->stream.reset();
 }

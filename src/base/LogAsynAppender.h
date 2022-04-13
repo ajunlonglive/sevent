@@ -50,7 +50,7 @@ private:
     std::unique_ptr<Buffer> nextBuffer;
     std::vector<std::unique_ptr<Buffer>> buffersHolder;
 };
-//输出到文件(默认500MB滚动文件;)
+//输出到文件(默认500MB或每天0点后滚动文件(每write,check次,检查一次时间));
 // basename="./logfile",文件名="[./logfile].20220330-163914.hostname.pid.log"
 class LogFile : noncopyable {
 public:

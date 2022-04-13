@@ -83,7 +83,8 @@ void LogAsynAppender::process() {
     output->flush();
 }
 void LogAsynAppender::start() {
-    this->running = true;
+    this->running 
+             = true;
     this->thd = thread(&LogAsynAppender::process, this);
     this->latch.wait();
 }
@@ -147,7 +148,7 @@ void LogFile::writeInternal(const char *log, int len) {
         remain -= tmp;
     }
     writtenBytes += len;
-    // 默认500MB或每天0点后滚动文件(每check次,检查一次);
+    // 默认500MB或每天0点后滚动文件(每write(),check次,检查一次);
     if (writtenBytes > rollSize) {
         rollFile();
     } else {

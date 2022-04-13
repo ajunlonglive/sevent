@@ -32,5 +32,5 @@ aux_source_directory(${SEVENE_SOURCE_DIR} SRC_LIST)
 
 #目标文件及路径
 set(EXE "a.out")
-add_executable(${EXE} testLogAsync.cpp ${SRC_LIST})
+add_executable(${EXE} testepoll.cpp ${SRC_LIST})
 set(EXECUTABLE_OUTPUT_PATH ../)

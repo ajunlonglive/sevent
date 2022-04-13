@@ -5,12 +5,11 @@
 
 namespace sevent{
 
-class CommonUtil{
-public:
-    static std::string getHostname();
-    static pid_t getPid();
-};
+namespace CommonUtil{
+    std::string getHostname();
+    pid_t getPid();
 
+} // namespace CommonUtil
 } // namespace sevent
 
 #endif

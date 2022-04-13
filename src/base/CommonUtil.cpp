@@ -4,7 +4,11 @@
 using namespace std;
 using namespace sevent;
 
-string CommonUtil::getHostname() {
+namespace sevent{
+
+namespace CommonUtil{
+
+string getHostname() {
     char buf[256];
     if (gethostname(buf, sizeof(buf)) == 0) {
         buf[sizeof(buf) - 1] = '\0';
@@ -13,4 +17,8 @@ string CommonUtil::getHostname() {
         return "unknownhost";
     }
 }
-pid_t CommonUtil::getPid() { return getpid(); }
+pid_t getPid() { return getpid(); }
+    
+} // namespace CommonUtil
+} // namespace sevent
+

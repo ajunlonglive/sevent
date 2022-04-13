@@ -2,7 +2,6 @@
 #define SEVENT_BASE_CURRENTTHREAD_H
 
 #include <stdio.h>
-#include <string>
 #include <sys/syscall.h>
 #include <thread>
 #include <unistd.h>

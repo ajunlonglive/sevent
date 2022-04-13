@@ -2,8 +2,10 @@
 #include "../base/CurrentThread.h"
 #include "../base/logger.h"
 #include <mutex>
-#include <string>
-#include <thread>
+// #include <string>
+// #include <thread>
+// #include <errno.h>
+// #include <string.h>
 using namespace std;
 // using namespace sevent;
 
@@ -40,6 +42,28 @@ mutex m;
 //     this_thread::sleep_for(10ms);
 //     func(str,num);
 // }
+
+class ErrorMessage {
+public:
+    ErrorMessage():errNumber(errno){}
+    int getErrno() { return errNumber; }
+    const char* getErrStr(){
+        thread_local static char errnoBuf[512];
+        return strerror_r(errNumber, errnoBuf, sizeof(errnoBuf));
+    }
+    string getErrMsg(){
+        string errMsg;
+        errMsg.append(getErrStr());
+        errMsg.append("(errno=");
+        errMsg.append(to_string(getErrno()));
+        errMsg.append(")");
+        return errMsg;
+    }
+
+private:
+    int errNumber;
+};
+
 int main() {
     // string s = "Hello";
     sevent::DefaultLogProcessor::setShowMicroSecond(true);
@@ -62,8 +86,8 @@ int main() {
     LOG_DEBUG << "LOG_DEBUG";
     LOG_INFO << "LOG_INFO";
     LOG_WARN << "LOG_WARN";
-    LOG_ERROR << "LOG_ERROR";
-    LOG_FATAL << "LOG_FATAL";
-
+    LOG_ERROR << "LOG_ERROR"; 
+    LOG_SYSERR << "LOG_SYSERR";
+    
     return 0;
 }

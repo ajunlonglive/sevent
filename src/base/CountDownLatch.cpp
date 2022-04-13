@@ -11,7 +11,7 @@ void CountDownLatch::wait(){
     uLock.unlock();
 }
 void CountDownLatch::countDown(){
-    std::unique_lock<std::mutex> uLock(this->mtx);
+    std::lock_guard<std::mutex> lg(this->mtx);
     --count;
     if (count == 0)
         cond.notify_all();

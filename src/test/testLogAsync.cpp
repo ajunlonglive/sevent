@@ -58,7 +58,7 @@ int main() {
 
     printf("pid = %d\n", getpid());
 
-    bench(false);
+    bench(true);
 
     return 0;
 }

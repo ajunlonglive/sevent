@@ -4,8 +4,8 @@
 #include "LogStream.h"
 #include "Timestamp.h"
 #include "noncopyable.h"
-#include <string>
 #include <memory>
+#include <string>
 #include <thread>
 
 namespace sevent {
@@ -14,6 +14,7 @@ class LogEvent;
 class LogEventProcessor;
 class LogAppender;
 extern time_t g_gmtOffsetSec;
+//默认UTC+0,只影响格式化时间;例如 中国标准时间=UTC+8 setUTCOffset(8*3600)
 void setUTCOffset(time_t gmtOffsetSecond);
 
 //日志
@@ -25,11 +26,9 @@ public:
     void flush();
     void msgBefore(LogEvent &logEv);
     void msgAfter(LogEvent &logEv);
-
     void log(const char *file, int line, Logger::Level level,
              const std::string &msg);
-
-    // TODO 通过环境变量初始化logLevel getenv("MUDUO_LOG_TRACE")
+    // TODO 通过环境变量初始化logLevel 参考muduo:getenv("MUDUO_LOG_TRACE")
     void setLogLevel(Level level) { this->level = level; }
     Level getLogLevel() { return this->level; }
     void setLogEventProcessor(std::unique_ptr<LogEventProcessor> &processor);
@@ -72,7 +71,7 @@ public:
 //日志消息实体
 class LogEvent {
 public:
-    LogEvent(const char *file, int line, Logger::Level level);
+    LogEvent(const char *file, int line, Logger::Level level,int err = 0);
     ~LogEvent(); //析构时输出log到Appender
 
     Timestamp &getTimestamp() { return this->time; }
@@ -80,6 +79,7 @@ public:
     Logger::Level getLevel() { return this->level; }
     const char *getFile() { return this->file; }
     int getLine() { return this->line; }
+    int getErrno() { return this->errNum; }
     LogStream &getStream() { return this->stream; }
 
 private:
@@ -88,8 +88,9 @@ private:
 private:
     const char *file; //源文件名      __FILE__
     int line;         //源文件行号    __LINE__
-    // TODO:__FUNC__
+    // TODO:__func__
     Logger::Level level;
+    int errNum;
     Timestamp time;
     thread_local static std::string threadId;
     thread_local static LogStream stream; //用于存放log字符串
@@ -104,7 +105,6 @@ public:
     virtual ~LogAppender() {}
 };
 
-
 #define LOG_DEBUG                                                              \
     if (sevent::Logger::instance().getLogLevel() <= sevent::Logger::DEBUG)     \
     sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::DEBUG).getStream()
@@ -112,11 +112,16 @@ public:
     if (sevent::Logger::instance().getLogLevel() <= sevent::Logger::INFO)      \
     sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::INFO).getStream()
 #define LOG_WARN                                                               \
+    if (sevent::Logger::instance().getLogLevel() <= sevent::Logger::WARN)  \
     sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::WARN).getStream()
 #define LOG_ERROR                                                              \
     sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::ERROR).getStream()
 #define LOG_FATAL                                                              \
     sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::FATAL).getStream()
+#define LOG_SYSERR                                                             \
+    sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::ERROR,errno).getStream()
+#define LOG_SYSFATAL                                                             \
+    sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::FATAL,errno).getStream()
 } // namespace sevent
 
 #endif
