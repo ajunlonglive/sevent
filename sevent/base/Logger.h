@@ -20,7 +20,7 @@ void setUTCOffset(time_t gmtOffsetSecond);
 //日志
 class Logger : noncopyable {
 public:
-    enum Level { DEBUG, INFO, WARN, ERROR, FATAL, LEVEL_SIZE };
+    enum Level { TRACE, DEBUG, INFO, WARN, ERROR, FATAL, LEVEL_SIZE };
     static Logger &instance(); //单例
     void append(const char *data, int len);
     void flush();
@@ -28,7 +28,6 @@ public:
     void msgAfter(LogEvent &logEv);
     void log(const char *file, int line, Logger::Level level,
              const std::string &msg);
-    // TODO 通过环境变量初始化logLevel 参考muduo:getenv("MUDUO_LOG_TRACE")
     void setLogLevel(Level level) { this->level = level; }
     Level getLogLevel() { return this->level; }
     void setLogEventProcessor(std::unique_ptr<LogEventProcessor> &processor);
@@ -41,6 +40,8 @@ private:
     using Processor_ptr = std::unique_ptr<LogEventProcessor>;
     using Output_ptr = std::unique_ptr<LogAppender>;
     Logger(Level level, Processor_ptr &&processor, Output_ptr &&output);
+    // 通过环境变量初始化SEVENT_LOG_TRACE:level 参考muduo:getenv("MUDUO_LOG_TRACE")
+    static Level initLevel();
 
 private:
     Level level;
@@ -71,7 +72,7 @@ public:
 //日志消息实体
 class LogEvent {
 public:
-    LogEvent(const char *file, int line, Logger::Level level,int err = 0);
+    LogEvent(const char *file, int line, Logger::Level level,bool isErr = false);
     ~LogEvent(); //析构时输出log到Appender
 
     Timestamp &getTimestamp() { return this->time; }
@@ -86,9 +87,9 @@ private:
     static std::string inittid();
 
 private:
+    // TODO:__func__
     const char *file; //源文件名      __FILE__
     int line;         //源文件行号    __LINE__
-    // TODO:__func__
     Logger::Level level;
     int errNum;
     Timestamp time;
@@ -105,6 +106,9 @@ public:
     virtual ~LogAppender() {}
 };
 
+#define LOG_TRACE                                                              \
+    if (sevent::Logger::instance().getLogLevel() <= sevent::Logger::TRACE)     \
+    sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::TRACE).getStream()
 #define LOG_DEBUG                                                              \
     if (sevent::Logger::instance().getLogLevel() <= sevent::Logger::DEBUG)     \
     sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::DEBUG).getStream()
@@ -119,9 +123,9 @@ public:
 #define LOG_FATAL                                                              \
     sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::FATAL).getStream()
 #define LOG_SYSERR                                                             \
-    sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::ERROR,errno).getStream()
+    sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::ERROR,true).getStream()
 #define LOG_SYSFATAL                                                             \
-    sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::FATAL,errno).getStream()
+    sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::FATAL,true).getStream()
 } // namespace sevent
 
 #endif

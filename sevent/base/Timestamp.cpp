@@ -23,3 +23,8 @@ double Timestamp::timeDifference(Timestamp high, Timestamp low){
     int64_t diff = high.getMicroSecond() - low.getMicroSecond();
     return static_cast<double>(diff) / Timestamp::microSecondUnit;
 }
+
+Timestamp Timestamp::addTime(Timestamp t, double second) {
+    int64_t msec = static_cast<int64_t>(second * Timestamp::microSecondUnit);
+    return Timestamp(t.getMicroSecond() + msec);
+}

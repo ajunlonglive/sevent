@@ -1,11 +1,10 @@
 #include "Logger.h"
 #include "CurrentThread.h"
-#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <sys/time.h>
+#include <time.h>
 
 using namespace sevent;
 using namespace std;
@@ -17,7 +16,7 @@ thread_local LogStream LogEvent::stream;
 namespace sevent {
 
 const char *LogLevelName[Logger::LEVEL_SIZE] = {
-    "DEBUG ", "INFO  ", "WARN  ", "ERROR ", "FATAL ",
+    "TRACE ", "DEBUG ", "INFO  ", "WARN  ", "ERROR ", "FATAL ",
 };
 time_t g_gmtOffsetSec = 0;
 bool g_showMicroSecond = false;
@@ -37,11 +36,20 @@ Logger::Logger(Level level, Processor_ptr &&processor, Output_ptr &&output)
 }
 //构造默认实例
 Logger &Logger::instance() {
-    static Logger logger(Level::INFO,
+    static Logger logger(Level::TRACE,
                          unique_ptr<LogEventProcessor>(new DefaultLogProcessor),
                          unique_ptr<LogAppender>(new LogAppender));
     return logger;
 }
+Logger::Level Logger::initLevel() {
+    if (::getenv("SEVENT_LOG_TRACE"))
+        return Level::TRACE;
+    else if (::getenv("SEVENT_LOG_DEBUG"))
+        return Level::DEBUG;
+    else
+        return Level::INFO;
+}
+
 void Logger::log(const char *file, int line, Level level, const string &msg) {
     LogEvent logEv(file, line, level);
     logEv.getStream() << msg;
@@ -130,12 +138,14 @@ void DefaultLogProcessor::setShowMicroSecond(bool show) {
 /********************************************************************
  *                          LogEvent
  * ******************************************************************/
-LogEvent::LogEvent(const char *file, int line, Logger::Level level,int err)
-    : file(file), line(line), level(level),errNum(err), time(Timestamp::now()) {
+LogEvent::LogEvent(const char *file, int line, Logger::Level level,bool isErr)
+    : file(file), line(line), level(level),errNum(0), time(Timestamp::now()) {
     //参考muduo 5.2章:GCC的strrchr()对于字符串字面量可以在编译期求值
     const char *slash = strrchr(file, '/');
     if (slash)
         this->file = slash + 1;
+    if (isErr)
+        errNum = errno;
     Logger::instance().msgBefore(*this);
 }
 LogEvent::~LogEvent() {

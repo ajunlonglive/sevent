@@ -83,8 +83,7 @@ void LogAsynAppender::process() {
     output->flush();
 }
 void LogAsynAppender::start() {
-    this->running 
-             = true;
+    this->running = true;
     this->thd = thread(&LogAsynAppender::process, this);
     this->latch.wait();
 }

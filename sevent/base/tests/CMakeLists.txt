@@ -1,0 +1,5 @@
+add_executable(testLogAsync testLogAsync.cpp)
+target_link_libraries(testLogAsync sevent_base)
+
+add_executable(testLogger testLogger.cpp)
+target_link_libraries(testLogger sevent_base)

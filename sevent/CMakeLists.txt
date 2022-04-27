@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 2.6)
-project(mytest CXX)
 
-set(SEVENE_PATH "$ENV{HOME}/shares/sylar/test/src")
-set(SEVENE_SOURCE_DIR ${SEVENE_PATH}/base)
+project(sevent CXX)
 
 #编译选项
 set(CXX_FLAGS
@@ -17,20 +15,25 @@ set(CXX_FLAGS
  -Wold-style-cast
  -Woverloaded-virtual
  -Wpointer-arith
+#  -Wshadow
  -Wwrite-strings
  -march=native
+ -std=c++11
  -rdynamic
  )
+if(CMAKE_BUILD_BITS EQUAL 32)
+  list(APPEND CXX_FLAGS "-m32")
+endif()
 string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CXX_FLAGS}")
+
 # set(CMAKE_BUILD_TYPE "Release")
 set(CMAKE_BUILD_TYPE "Debug")
 set(CMAKE_CXX_FLAGS_DEBUG "-O0")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
 
-#源文件
-aux_source_directory(${SEVENE_SOURCE_DIR} SRC_LIST)
+add_subdirectory(base)
+add_subdirectory(net)
 
-#目标文件及路径
-set(EXE "a.out")
-add_executable(${EXE} testepoll.cpp ${SRC_LIST})
-set(EXECUTABLE_OUTPUT_PATH ../)
+#目标文件路径
+# set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
+# set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)

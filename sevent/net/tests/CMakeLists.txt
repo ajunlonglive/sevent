@@ -1,0 +1,2 @@
+add_executable(testBuffer testBuffer.cpp)
+target_link_libraries(testBuffer sevent_net)
