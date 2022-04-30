@@ -2,14 +2,13 @@
 #define SEVENT_NET_WAKEUPCHANNEL_H
 
 #include "Channel.h"
-#include "../base/noncopyable.h"
 #include <memory>
 namespace sevent {
 namespace net {
 class Channel;
 class EventLoop;
 
-class WakeupChannel : noncopyable {
+class WakeupChannel : public Channel {
 public:
     WakeupChannel(EventLoop *loop);
     ~WakeupChannel();
@@ -17,11 +16,7 @@ public:
 
 private:
     int createEventFd();
-    void handleRead();
-
-private:
-    int evfd;
-    Channel wakeupChannel;
+    void handleRead() override;
 };
 
 } // namespace net

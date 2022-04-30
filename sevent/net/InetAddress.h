@@ -8,8 +8,9 @@ namespace net {
 
 class InetAddress {
 public:
+    InetAddress();
     //  Mostly used in TcpServer listening
-    explicit InetAddress(uint16_t port = 0, bool ipv6 = false, bool loopback = false);
+    explicit InetAddress(uint16_t port, bool ipv6 = false, bool loopback = false);
     // ip = "1.2.3.4"
     InetAddress(const std::string& ip, uint16_t port, bool ipv6 = false);
     // Mostly used when accepting new connections
@@ -19,11 +20,15 @@ public:
     const struct sockaddr *getSockAddr() const {
         return reinterpret_cast<const struct sockaddr *>(&addr6);
     }
+    struct sockaddr *getSockAddr() {
+        return reinterpret_cast<struct sockaddr *>(&addr6);
+    }
     void setsockAddr(const struct sockaddr_in6 &address) { addr6 = address; }
 
     std::string toStringIp() const;
     std::string toStringIpPort() const;
     uint16_t getPortHost() const;
+    sa_family_t family() const { return addr.sin_family; }
 
 private:
     union {

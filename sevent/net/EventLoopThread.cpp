@@ -4,23 +4,26 @@ using namespace std;
 using namespace sevent;
 using namespace sevent::net;
 
-EventLoopThread::EventLoopThread() :loop(nullptr),isLooping(false), latch(1) {
+EventLoopThread::EventLoopThread(const ThreadInitCallback &cb) 
+    :loop(nullptr),isLooping(false), latch(1), callback(cb) {
 }
 EventLoopThread::~EventLoopThread() {
     if (isLooping)
         loop->quit();
     thd.join();
 }
-EventLoop *EventLoopThread::startLoop() {
-    thd = thread(&EventLoopThread::start, this);
+EventLoop *EventLoopThread::startLoop(const string &name) {
+    thd = thread(&EventLoopThread::start, this, name);
     latch.wait();
     return loop;
 }
 
-void EventLoopThread::start() {
-    //loop 线程
-    EventLoop l;
+void EventLoopThread::start(const string &name) {
+    // thd线程
+    EventLoop l(name);
     loop = &l;
+    if (callback)
+        callback(loop);
     isLooping = true;
     latch.countDown();
     l.loop();

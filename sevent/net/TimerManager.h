@@ -1,8 +1,6 @@
 #ifndef SEVENT_NET_TIMERMANAGER_H
 #define SEVENT_NET_TIMERMANAGER_H
 
-#include "../base/noncopyable.h"
-#include "Channel.h"
 #include "Timer.h"
 #include "TimerId.h"
 #include <memory>
@@ -11,39 +9,35 @@
 namespace sevent {
 namespace net {
 class EventLoop;
+class TimerfdChannel;
 class TimerId;
 
-class TimerManager : noncopyable {
+class TimerManager {
 public:
     TimerManager(EventLoop *loop);
     ~TimerManager();
 
-    // 必须线程安全
+    // 保证在loop线程执行
     TimerId addTimer(std::function<void()> cb, Timestamp expired,
                      double interval);
-    // 必须线程安全
+    // 保证在loop线程执行
     void cancel(TimerId timerId);
 
 private:
-    // 获取并处理timeout的Timer
-    void handleRead();
-    void readTimerfd();
-    void resetExpired(Timestamp expired);
-    void resetTimerExpired(std::vector<Timer::ptr> &list, Timestamp now);
+    // timerfdChannel的回调
+    void handleExpired();
+    void resetTimers(std::vector<Timer::ptr> &list, Timestamp now);
     bool insert(Timer::ptr &timer);
     std::vector<Timer::ptr> getExpired(Timestamp now);
 
-    int initTimerfd();
-
+    TimerfdChannel *createChannel();
     void addTimerInLoop(Timer::ptr &timer);
     void cancelInLoop(const TimerId &timerId);
 
 private:
-    EventLoop *ownerLoop;
-    const int timerfd;
-    Channel timerChannel;
-    // Timer::ptr  = shared_ptr<Timer>
     using TimerSet = std::set<std::shared_ptr<Timer>, Timer::Comparator>;
+    EventLoop *ownerLoop;
+    std::unique_ptr<TimerfdChannel> timerfdChannel;
     TimerSet timers;
 };
 

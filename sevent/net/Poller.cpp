@@ -14,7 +14,7 @@ int Poller::poll(int timeout) {
     if (count > 0) {
         fillActiveChannels(count);
     } else if (count == 0) {
-        LOG_TRACE << "timed out";
+        // LOG_TRACE << "timed out";
     } else {
         if (saveErr != EINTR){
             errno = saveErr;

@@ -11,7 +11,9 @@ static_assert(offsetof(sockaddr_in, sin_family) == 0, "sin_family offset 0");
 static_assert(offsetof(sockaddr_in6, sin6_family) == 0, "sin6_family offset 0");
 static_assert(offsetof(sockaddr_in, sin_port) == 2, "sin_port offset 2");
 static_assert(offsetof(sockaddr_in6, sin6_port) == 2, "sin6_port offset 2");
-
+InetAddress::InetAddress() {
+    memset(&addr6, 0, sizeof(addr6));
+}
 // INADDR_ANY;  0.0.0.0
 // INADDR_LOOPBACK; 127.0.0.1
 InetAddress::InetAddress(uint16_t port , bool ipv6, bool loopback) {

@@ -11,11 +11,9 @@ using namespace std;
 using namespace sevent;
 using namespace sevent::net;
 
-WakeupChannel::WakeupChannel(EventLoop *loop)
-    : evfd(createEventFd()), wakeupChannel(evfd, loop) {
+WakeupChannel::WakeupChannel(EventLoop *loop) : Channel(createEventFd(), loop) {
     // TODO 移动到EventLoop?
-    wakeupChannel.setReadCallback(std::bind(&WakeupChannel::handleRead, this));
-    wakeupChannel.enableReadEvent();
+    Channel::enableReadEvent();
 }
 
 int WakeupChannel::createEventFd() {
@@ -27,7 +25,7 @@ int WakeupChannel::createEventFd() {
 
 void WakeupChannel::wakeup() {
     uint64_t n = 1;
-    ssize_t ret = sockets::write(evfd, &n, sizeof(n));
+    ssize_t ret = sockets::write(fd, &n, sizeof(n));
     if (ret != sizeof(n))
         LOG_ERROR << "WakeupChannel::wakeup() - write:" << ret
                   << "bytes instead of 8";
@@ -35,10 +33,10 @@ void WakeupChannel::wakeup() {
 
 void WakeupChannel::handleRead() {
     uint64_t n = 1;
-    ssize_t ret = sockets::read(evfd, &n, sizeof(n));
+    ssize_t ret = sockets::read(fd, &n, sizeof(n));
     if (ret != sizeof(n))
         LOG_ERROR << "WakeupChannel::handleRead() - read:" << ret
                   << "bytes instead of 8";    
 }
 
-WakeupChannel::~WakeupChannel() { sockets::close(evfd); }
+WakeupChannel::~WakeupChannel() { sockets::close(fd); }

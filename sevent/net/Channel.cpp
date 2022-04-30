@@ -15,20 +15,17 @@ Channel::Channel(int fd, EventLoop *loop)
     : fd(fd), events(0), revents(0), index(-1), ownerLoop(loop) {}
 
 void Channel::handleEvent() {
+    ownerLoop->assertInOwnerThread();
     if ((revents & POLLHUP) && !(revents & POLLIN))
-        if (closeCallback)
-            closeCallback();
+        handleClose();
     if (revents & POLLNVAL)
         LOG_WARN << "Channel::handleEvent() - revents:POLLNVAL";
     if (revents & (POLLERR | POLLNVAL))
-        if (errorCallback)
-            errorCallback();
+        handleError();
     if (revents & (POLLIN | POLLPRI | POLLRDHUP))
-        if (readCallback)
-            readCallback();
+        handleRead();
     if (revents & (POLLOUT))
-        if (writeCallback)
-            writeCallback();
+        handleWrite();
 }
 
 void Channel::updateEvent() { ownerLoop->updateChannel(this); }

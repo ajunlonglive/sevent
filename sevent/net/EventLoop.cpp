@@ -17,14 +17,14 @@ using namespace sevent::net;
 
 thread_local EventLoop *EventLoop::threadEvLoop = nullptr;
 
-EventLoop::EventLoop()
+EventLoop::EventLoop(const std::string &name)
     : isTasking(false), isQuit(false), threadId(CurrentThread::gettid()),
       poller(new EpollPoller), timerManager(new TimerManager(this)), 
-      wakeupChannel(new WakeupChannel(this)) {
+      wakeupChannel(new WakeupChannel(this)), loopName(name) {
     if (!threadEvLoop)
         threadEvLoop = this;
     else
-        LOG_FATAL << "EventLoop already exists in this thread, create failed";
+        LOG_FATAL << "EventLoop - "<< loopName <<" already exists in this thread, create failed";
 }
 
 // TODO
@@ -32,7 +32,7 @@ EventLoop::~EventLoop() { threadEvLoop = nullptr; }
 
 void EventLoop::loop() { 
     assertInOwnerThread(); 
-    LOG_TRACE << "EventLoop:" << this << " ,start looping";
+    LOG_TRACE << "EventLoop - "<< loopName <<":" << this << " ,start looping";
     while (!isQuit) {
         poller->poll(pollTimeout);
         vector<Channel *> &activeChannels = poller->getActiveChannels();
@@ -41,7 +41,7 @@ void EventLoop::loop() {
         }
         doPendingTasks();
     }
-    LOG_TRACE << "EventLoop:" << this << " ,stop looping";
+    LOG_TRACE << "EventLoop - "<< loopName <<":" << this << " ,stop looping";
 }
 
 void EventLoop::quit() { 
@@ -95,12 +95,19 @@ void EventLoop::doPendingTasks() {
 bool EventLoop::isInOwnerThread() const {
     return threadId == CurrentThread::gettid();
 }
-void EventLoop::assertInOwnerThread() {
+void EventLoop::assertInOwnerThread() const {
     if (!isInOwnerThread()) {
-        LOG_FATAL << "EventLoop::assertInOwnThread - EventLoop:" << this
+        LOG_FATAL << "EventLoop::assertInOwnThread - "<< loopName <<":" << this
                   << " was belonged to threadId: " << threadId
-                  << " ,current threadId: " << CurrentThread::gettid();
+                  << ", current threadId: " << CurrentThread::gettid();
     }
+}
+void EventLoop::assertInOwnerThread(const std::string &msg) const {
+    if (!isInOwnerThread()) {
+        LOG_FATAL << "EventLoop::assertInOwnThread - "<< loopName <<":" << this
+                  << " was belonged to threadId: " << threadId
+                  << ", current threadId: " << CurrentThread::gettid() << ", " << msg;
+    }    
 }
 // Timestamp::now, microseconds since the Epoch, 1970-01-01 00:00:00 +0000 (UTC)
 TimerId EventLoop::addTimer(Timestamp time, function<void()> cb, double interval) {
