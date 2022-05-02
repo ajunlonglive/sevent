@@ -10,7 +10,7 @@ public:
     virtual void onConnection(const TcpConnection::ptr &conn) {}
     virtual void onMessage(const TcpConnection::ptr &conn, Buffer *buf) {}
     virtual void onWriteComplete() {}
-    virtual void onClose() {}
+    virtual void onClose(const TcpConnection::ptr &conn) {}
     virtual void onHighWaterMark() {}
 };
 

@@ -55,12 +55,11 @@ void EpollPoller::updateChannel(Channel *channel) {
     }
 }
 
-// QUEST 什么时候真正删除channel
 void EpollPoller::removeChannel(Channel *channel) {
     // ownerLoop->assertInOwnerThread();
     int fd = channel->getFd();
-    assert(channelMap.find(fd) != channelMap.end());
-    assert(channelMap.find(fd)->second == channel);
+    // assert(channelMap.find(fd) != channelMap.end());
+    // assert(channelMap.find(fd)->second == channel);
     channelMap.erase(fd);
     if (channel->getStatus() == normal)
         update(EPOLL_CTL_DEL, channel);

@@ -26,6 +26,7 @@ int inet_pton(int af, const char *src, void *dst);
 const char *inet_ntop(int af, const void *src, char *dst, socklen_t size);
 
 int setsockopt(int sockfd, int level, int optname, const void *optval, socklen_t optlen);
+int getsockopt(int sockfd, int level, int optname, void *optval, socklen_t *optlen);
 int getsockname(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
 
 // for Acceptor
@@ -34,6 +35,8 @@ int createNBlockfd(sa_family_t family);
 void setReuseAddr(int sockfd, bool b);
 int dolisten(int sockfd);
 int doaccept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+
+int getSocketError(int sockfd);
 
 } // namespace sockets
 } // namespace net

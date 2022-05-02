@@ -82,6 +82,13 @@ int sockets::setsockopt(int sockfd, int level, int optname, const void *optval, 
         LOG_SYSERR << "sockets::setsockopt() failed";
     return ret;    
 }
+int sockets::getsockopt(int sockfd, int level, int optname, void *optval, socklen_t *optlen) {
+    int ret = ::getsockopt(sockfd, level, optname, optval, optlen);
+    if (ret < 0)
+        LOG_SYSERR << "sockets::getsockopt() failed";
+    return ret;       
+
+}
 int sockets::getsockname(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
     int ret = ::getsockname(sockfd, addr, addrlen);
     if (ret < 0)
@@ -132,4 +139,13 @@ int sockets::doaccept(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
         }
     }
     return connfd;
+}
+
+int sockets::getSocketError(int sockfd) {
+    int optval;
+    socklen_t optlen = static_cast<socklen_t>(sizeof optval);
+    int ret = sockets::getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &optval, &optlen);
+    if (ret < 0)
+        return errno;
+    return optval;
 }

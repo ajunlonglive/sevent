@@ -23,7 +23,7 @@ public:
     // 更新/移出监听事件列表,必须在ownerLoop调用
     virtual void updateChannel(Channel *channel) = 0;
 
-    // 移出监听事件列表和channelMap,必须在ownerLoop调用
+    // 移出监听事件列表和channelMap,必须在ownerLoop调用(TcpConnection析构才close(fd))
     virtual void removeChannel(Channel* channel) = 0;
 
     std::vector<Channel *> &getActiveChannels() { return activeChannels; }

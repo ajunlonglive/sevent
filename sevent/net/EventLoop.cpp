@@ -32,7 +32,7 @@ EventLoop::~EventLoop() { threadEvLoop = nullptr; }
 
 void EventLoop::loop() { 
     assertInOwnerThread(); 
-    LOG_TRACE << "EventLoop - "<< loopName <<":" << this << " ,start looping";
+    LOG_TRACE << "EventLoop - "<< loopName <<":" << this << ", start looping";
     while (!isQuit) {
         poller->poll(pollTimeout);
         vector<Channel *> &activeChannels = poller->getActiveChannels();
@@ -41,7 +41,7 @@ void EventLoop::loop() {
         }
         doPendingTasks();
     }
-    LOG_TRACE << "EventLoop - "<< loopName <<":" << this << " ,stop looping";
+    LOG_TRACE << "EventLoop - "<< loopName <<":" << this << ", stop looping";
 }
 
 void EventLoop::quit() { 

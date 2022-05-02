@@ -58,10 +58,12 @@ void PollPoller::updateChannel(Channel *channel){
 
 void PollPoller::removeChannel(Channel* channel) {
     // ownerLoop->assertInOwnerThread();
-    assert(channelMap.find(channel->getFd()) != channelMap.end());
-    assert(channelMap[channel->getFd()] == channel);
+    // assert(channelMap.find(channel->getFd()) != channelMap.end());
+    // assert(channelMap[channel->getFd()] == channel);
     int index = channel->getIndex();
-    assert(0 <= index && index < static_cast<int>(pollfdList.size()));
+    if (index < 0)
+        return;
+    // assert(0 <= index && index < static_cast<int>(pollfdList.size()));
     struct pollfd &pfd = pollfdList[index];
     assert(pfd.fd == channel->getFd() || pfd.fd == -channel->getFd() - 1);
     // 移除channelMap 和 pollfdList

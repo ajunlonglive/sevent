@@ -31,13 +31,16 @@ public:
     // EventLoopWorker线程初始化时,loop()执行前的回调
     void setWorkerInitCallback(const std::function<void(EventLoop *)> &cb);
 
-
     // 当threadNum为0时,ownerLoop就是workerLoop
     EventLoop *getOwnerLoop() const { return ownerLoop; }
     std::vector<EventLoop *> &getWorkerLoops();
+    
+    // for TcpConnection::handleClose
+    void removeConnection(int64_t id);
 private:
     Acceptor *createAccepptor(EventLoop *loop, const InetAddress &listenAddr);
     void onConnection(int sockfd, const InetAddress &addr);
+    void removeConnectionInLoop(int64_t id);
 
 private:
     EventLoop *ownerLoop;

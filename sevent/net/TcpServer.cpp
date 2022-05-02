@@ -27,7 +27,8 @@ TcpServer::~TcpServer() {
     LOG_TRACE << "TcpServer::~TcpServer()";
     using iter = pair<const int64_t, shared_ptr<TcpConnection>>;
     for (iter &item : connections) {
-        //TODO
+        TcpConnection::ptr &conn = item.second;
+        conn->getOwnerLoop()->runInLoop(std::bind(&TcpConnection::removeItself, conn));
     }
 }
 
@@ -59,11 +60,19 @@ void TcpServer::onConnection(int sockfd, const InetAddress &peerAddr) {
     worker->runInLoop(std::bind(&TcpConnection::onConnection, connection));
 }
 
+void TcpServer::removeConnection(int64_t id) {
+    ownerLoop->runInLoop(std::bind(&TcpServer::removeConnectionInLoop, this, id));
+}
+void TcpServer::removeConnectionInLoop(int64_t id) {
+    ownerLoop->assertInOwnerThread();
+    // LOG_TRACE << "TcpServer::removeConnectionInLoop(), id = " << id;
+    connections.erase(id);
+}
+
 vector<EventLoop *> &TcpServer::getWorkerLoops() {
     return workers->getWorkerLoops();
 }
 
-void TcpServer::setWorkerInitCallback(
-    const std::function<void(EventLoop *)> &cb) {
+void TcpServer::setWorkerInitCallback( const std::function<void(EventLoop *)> &cb) {
     initCallBack = cb;
 }
