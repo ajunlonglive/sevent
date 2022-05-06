@@ -27,6 +27,7 @@ public:
 
     // 手动移动readIndex;
     void retrieve(size_t len);
+    // 复原readIndex和writeIndex
     void retrieveAll();
     void swap(Buffer &buf);
     void shrinkToFit();

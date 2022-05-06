@@ -11,12 +11,10 @@ static_assert(offsetof(sockaddr_in, sin_family) == 0, "sin_family offset 0");
 static_assert(offsetof(sockaddr_in6, sin6_family) == 0, "sin6_family offset 0");
 static_assert(offsetof(sockaddr_in, sin_port) == 2, "sin_port offset 2");
 static_assert(offsetof(sockaddr_in6, sin6_port) == 2, "sin6_port offset 2");
-InetAddress::InetAddress() {
-    memset(&addr6, 0, sizeof(addr6));
-}
+InetAddress::InetAddress() { memset(&addr6, 0, sizeof(addr6)); }
 // INADDR_ANY;  0.0.0.0
 // INADDR_LOOPBACK; 127.0.0.1
-InetAddress::InetAddress(uint16_t port , bool ipv6, bool loopback) {
+InetAddress::InetAddress(uint16_t port, bool ipv6, bool loopback) {
     if (!ipv6) {
         memset(&addr, 0, sizeof(addr));
         addr.sin_family = AF_INET;
@@ -32,7 +30,7 @@ InetAddress::InetAddress(uint16_t port , bool ipv6, bool loopback) {
     }
 }
 
-InetAddress::InetAddress(const std::string& ip, uint16_t port, bool ipv6) {
+InetAddress::InetAddress(uint16_t port, const std::string &ip, bool ipv6) {
     if (!ipv6) {
         memset(&addr, 0, sizeof(addr));
         addr.sin_family = AF_INET;
@@ -45,13 +43,21 @@ InetAddress::InetAddress(const std::string& ip, uint16_t port, bool ipv6) {
         sockets::inet_pton(AF_INET6, ip.c_str(), &addr6.sin6_addr);
     }
 }
+InetAddress::InetAddress(const std::string& ip, uint16_t port, bool ipv6)
+    : InetAddress(port, ip, ipv6) {}
+InetAddress::InetAddress(uint16_t port, const char *ip, bool ipv6)
+    : InetAddress(port, string(ip), ipv6) {}
+InetAddress::InetAddress(const char* ip, uint16_t port, bool ipv6)
+    : InetAddress(port, string(ip), ipv6) {}
 
 string InetAddress::toStringIp() const {
     char buf[64]{0};
     if (addr.sin_family == AF_INET)
-        sockets::inet_ntop(AF_INET, &(addr.sin_addr), buf, static_cast<socklen_t>(sizeof(buf)));
+        sockets::inet_ntop(AF_INET, &(addr.sin_addr), buf,
+                           static_cast<socklen_t>(sizeof(buf)));
     else if (addr.sin_family == AF_INET6)
-        sockets::inet_ntop(AF_INET6, &(addr6.sin6_addr), buf, static_cast<socklen_t>(sizeof(buf)));
+        sockets::inet_ntop(AF_INET6, &(addr6.sin6_addr), buf,
+                           static_cast<socklen_t>(sizeof(buf)));
     return buf;
 }
 string InetAddress::toStringIpPort() const {

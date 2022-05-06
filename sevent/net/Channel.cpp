@@ -29,4 +29,11 @@ void Channel::handleEvent() {
 }
 
 void Channel::updateEvent() { ownerLoop->updateChannel(this); }
-void Channel::remove() { ownerLoop->removeChannel(this); }
+void Channel::remove() { 
+    events = NoneEvent;
+    ownerLoop->removeChannel(this); 
+}
+void Channel::setFd(int sockfd) {
+    remove();
+    fd = sockfd;
+}

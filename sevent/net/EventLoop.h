@@ -25,9 +25,10 @@ public:
     EventLoop(const std::string &name = "bossLoop");
     ~EventLoop();
 
+    // 只能被EventLoop的所属线程调用(创建EventLoop的线程)
     void loop();
     void quit();
-    // 必须确保在EventLoop所在ownerThread调用
+    // 只能被EventLoop所属的ownerThread调用
     void updateChannel(Channel *channel);
     void removeChannel(Channel *channel);
 
@@ -36,9 +37,9 @@ public:
     void assertInOwnerThread(const std::string &msg) const;
 
     // 若在ownerThread中,则直接执行回调;
-    // 否则queueInLoop:加入ownerThread的任务队列(线程安全,下一次任务循环中执行);
+    // 否则queueInLoop:加入ownerLoop的任务队列(线程安全,下一次任务循环中执行);
     void runInLoop(std::function<void()> cb);
-    // 加入任务队列:若在非ownerThread调用或ownerThread正在执行任务循环,则还要wakeup该ownerLoop(下一次任务循环)
+    // 加入任务队列:若在非ownerThread调用或ownerLoop正在执行任务循环,则还要wakeup该ownerLoop(下一次任务循环)
     void queueInLoop(std::function<void()> cb);
 
     // Timestamp::now, microseconds since the Epoch, 1970-01-01 00:00:00 +0000 (UTC)

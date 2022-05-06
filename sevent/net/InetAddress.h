@@ -9,11 +9,12 @@ namespace net {
 class InetAddress {
 public:
     InetAddress();
-    //  Mostly used in TcpServer listening
     explicit InetAddress(uint16_t port, bool ipv6 = false, bool loopback = false);
     // ip = "1.2.3.4"
+    InetAddress(uint16_t port, const std::string& ip, bool ipv6 = false);
+    InetAddress(uint16_t port, const char* ip, bool ipv6 = false);
     InetAddress(const std::string& ip, uint16_t port, bool ipv6 = false);
-    // Mostly used when accepting new connections
+    InetAddress(const char* ip, uint16_t port, bool ipv6 = false);
     explicit InetAddress(const struct sockaddr_in& addr) : addr(addr){}
     explicit InetAddress(const struct sockaddr_in6& addr) : addr6(addr){}
 

@@ -16,6 +16,7 @@ class LogAppender;
 extern time_t g_gmtOffsetSec;
 //默认UTC+0,只影响格式化时间;例如 中国标准时间=UTC+8 setUTCOffset(8*3600)
 void setUTCOffset(time_t gmtOffsetSecond);
+const char *strerror_tl(int err);
 
 //日志
 class Logger : noncopyable {

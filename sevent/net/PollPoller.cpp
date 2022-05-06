@@ -51,7 +51,7 @@ void PollPoller::updateChannel(Channel *channel){
         pfd.fd = channel->getFd();
         pfd.events = static_cast<short>(channel->getEvents());
         pfd.revents = 0;
-        if (channel->getFd() >=0 && channel->isNoneEvent())
+        if (channel->isNoneEvent())
             pfd.fd = -channel->getFd() - 1;
     }
 }

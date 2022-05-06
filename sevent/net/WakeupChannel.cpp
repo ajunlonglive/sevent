@@ -39,4 +39,7 @@ void WakeupChannel::handleRead() {
                   << "bytes instead of 8";    
 }
 
-WakeupChannel::~WakeupChannel() { sockets::close(fd); }
+WakeupChannel::~WakeupChannel() {
+    Channel::remove();
+    sockets::close(fd);
+}

@@ -14,16 +14,21 @@ thread_local std::string LogEvent::threadId = LogEvent::inittid();
 thread_local LogStream LogEvent::stream;
 
 namespace sevent {
-
 const char *LogLevelName[Logger::LEVEL_SIZE] = {
     "TRACE ", "DEBUG ", "INFO  ", "WARN  ", "ERROR ", "FATAL ",
 };
+
 time_t g_gmtOffsetSec = 0;
 bool g_showMicroSecond = false;
-
 void setUTCOffset(time_t gmtOffsetSecond) {
     sevent::g_gmtOffsetSec = gmtOffsetSecond;
 }
+
+const char *strerror_tl(int err) {
+    thread_local char errnoBuf[512];
+    return strerror_r(err, errnoBuf, sizeof(errnoBuf));
+}
+
 } // namespace sevent
 
 /********************************************************************
@@ -89,8 +94,7 @@ void DefaultLogProcessor::beforeMsgToStream(LogEvent &logEv) {
     //errno
     int errNumber = logEv.getErrno();
     if (errNumber) {
-        thread_local char errnoBuf[512];
-        stream << strerror_r(errNumber, errnoBuf, sizeof(errnoBuf));
+        stream << strerror_tl(errNumber);
         stream << "(errno=" << errNumber << ") ";
     }
 }
@@ -119,7 +123,7 @@ const char *DefaultLogProcessor::formatTime(Timestamp time) {
         //默认(UTC+0);
         second += g_gmtOffsetSec;
         gmtime_r(&second, &tm_time);
-        //固定长度 17,实测strftime比snprintf快
+        //固定长度 17
         strftime(timeStrCache, sizeof(timeStrCache), "%Y%m%d %H:%M:%S",
                  &tm_time);
     }

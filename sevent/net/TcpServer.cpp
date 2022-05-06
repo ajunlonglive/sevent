@@ -14,9 +14,10 @@ using namespace sevent::net;
 using std::placeholders::_1;
 using std::placeholders::_2;
 using std::placeholders::_3;
-TcpServer::TcpServer(EventLoop *loop, uint16_t port, int threadNums = 0) 
+TcpServer::TcpServer(EventLoop *loop, uint16_t port, int threadNums) 
     : TcpServer(loop, InetAddress(port), threadNums) {}
-                    
+
+// TODO 多个server 多个server同一个workers?                    
 TcpServer::TcpServer(EventLoop *loop, const InetAddress &listenAddr, int threadNums)
     : ownerLoop(loop), tcpHandler(nullptr), nextId(1), started(false),
       acceptor(createAccepptor(loop, listenAddr)),
@@ -28,7 +29,7 @@ TcpServer::~TcpServer() {
     using iter = pair<const int64_t, shared_ptr<TcpConnection>>;
     for (iter &item : connections) {
         TcpConnection::ptr &conn = item.second;
-        conn->getOwnerLoop()->runInLoop(std::bind(&TcpConnection::removeItself, conn));
+        conn->getLoop()->runInLoop(std::bind(&TcpConnection::removeItself, conn));
     }
 }
 
@@ -53,10 +54,9 @@ void TcpServer::onConnection(int sockfd, const InetAddress &peerAddr) {
 
     shared_ptr<TcpConnection> connection = make_shared<TcpConnection>(
         worker, sockfd, nextId, localAddr, peerAddr);
-    connection->setTcpServer(this);
+    connection->setTcpHolder(this);
     connection->setTcpHandler(tcpHandler);
     connections[nextId++] = connection;
-    // TODO removeConnection
     worker->runInLoop(std::bind(&TcpConnection::onConnection, connection));
 }
 
@@ -65,7 +65,7 @@ void TcpServer::removeConnection(int64_t id) {
 }
 void TcpServer::removeConnectionInLoop(int64_t id) {
     ownerLoop->assertInOwnerThread();
-    // LOG_TRACE << "TcpServer::removeConnectionInLoop(), id = " << id;
+    LOG_TRACE << "TcpServer::removeConnectionInLoop(), id = " << id;
     connections.erase(id);
 }
 
@@ -73,6 +73,13 @@ vector<EventLoop *> &TcpServer::getWorkerLoops() {
     return workers->getWorkerLoops();
 }
 
+const InetAddress &TcpServer::getListenAddr() { return acceptor->getAddr(); }
+
 void TcpServer::setWorkerInitCallback( const std::function<void(EventLoop *)> &cb) {
     initCallBack = cb;
+}
+
+int TcpServer::setSockOpt(int level, int optname, const int *optval) {
+    return sockets::setsockopt(acceptor->getFd(), level, optname, optval,
+                        static_cast<socklen_t>(sizeof(int)));
 }

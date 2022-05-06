@@ -3,6 +3,9 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <signal.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
 #include <unistd.h>
@@ -11,6 +14,14 @@ using namespace sevent;
 using namespace sevent::net;
 
 const socklen_t sockets::addr6len = static_cast<socklen_t>(sizeof(struct sockaddr_in6));
+
+namespace {
+class IgnoreSigPipe {
+public:
+    IgnoreSigPipe() { ::signal(SIGPIPE, SIG_IGN); }
+};
+IgnoreSigPipe ignoreSigPipe;
+} // namespace
 
 ssize_t sockets::readv(int fd, const struct iovec *iov, int iovcnt){
     return ::readv(fd, iov, iovcnt);
@@ -26,14 +37,21 @@ ssize_t sockets::write(int fd, const void *buf, size_t count){
 int sockets::open(const char *pathname, int flags) {
     int ret = ::open(pathname, flags);
     if (ret < 0)
-        LOG_SYSFATAL << "sockets::open() faile - path:"<< pathname;
+        LOG_SYSFATAL << "sockets::open() faile, path = "<< pathname;
     return ret;
 }
 int sockets::close(int fd) {
     int ret = ::close(fd);
     if (ret < 0)
-        LOG_SYSERR << "sockets::close() failed - fd:"<<fd;
+        LOG_SYSERR << "sockets::close() failed, fd = "<< fd;
     return ret;
+}
+
+int sockets::shutdown(int sockfd, int how) {
+    int ret = ::shutdown(sockfd, how);
+    if (ret < 0)
+        LOG_SYSERR << "sockets::shutdown() failed, fd = "<< sockfd;
+    return ret;    
 }
 
 int sockets::socket(int domain, int type, int protocol) {
@@ -95,6 +113,12 @@ int sockets::getsockname(int sockfd, struct sockaddr *addr, socklen_t *addrlen) 
         LOG_SYSERR << "sockets::getsockname() failed";
     return ret;    
 }
+int sockets::getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
+    int ret = ::getpeername(sockfd, addr, addrlen);
+    if (ret < 0)
+        LOG_SYSERR << "sockets::getpeername() failed";
+    return ret;    
+}
 
 int sockets::openIdelFd() { return sockets::open("/dev/null", O_RDONLY | O_CLOEXEC); }
 
@@ -102,9 +126,19 @@ int sockets::createNBlockfd(sa_family_t family) {
     return sockets::socket(family, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, IPPROTO_TCP);
 }
 
-void sockets::setReuseAddr(int sockfd, bool b) {
-    int optval = b ? 1 : 0;
+void sockets::setReuseAddr(int sockfd, bool on) {
+    int optval = on ? 1 : 0;
     sockets::setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR,
+               &optval, static_cast<socklen_t>(sizeof(optval)));
+}
+void sockets::setTcpNoDelay(int sockfd, bool on) {
+    int optval = on ? 1 : 0;
+    sockets::setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY,
+               &optval, static_cast<socklen_t>(sizeof(optval)));    
+}
+void sockets::setKeepAlive(int sockfd, bool on) {
+    int optval = on ? 1 : 0;
+    sockets::setsockopt(sockfd, SOL_SOCKET, SO_KEEPALIVE,
                &optval, static_cast<socklen_t>(sizeof(optval)));
 }
 int sockets::dolisten(int sockfd) { return sockets::listen(sockfd, SOMAXCONN); }
@@ -148,4 +182,37 @@ int sockets::getSocketError(int sockfd) {
     if (ret < 0)
         return errno;
     return optval;
+}
+
+void sockets::shutdownWrite(int sockfd) { sockets::shutdown(sockfd, SHUT_WR); }
+
+struct sockaddr_in6 sockets::getLocalAddr(int sockfd) {
+    struct sockaddr_in6 addr;
+    memset(&addr, 0, sizeof(addr));
+    socklen_t addrlen = static_cast<socklen_t>(sizeof(addr));
+    sockets::getsockname(sockfd, reinterpret_cast<sockaddr *>(&addr), &addrlen);
+    return addr;
+}
+struct sockaddr_in6 sockets::getPeerAddr(int sockfd) {
+    struct sockaddr_in6 addr;
+    memset(&addr, 0, sizeof(addr));
+    socklen_t addrlen = static_cast<socklen_t>(sizeof(addr));
+    sockets::getpeername(sockfd, reinterpret_cast<sockaddr *>(&addr), &addrlen);
+    return addr;
+}
+bool sockets::isSelfConnect(int sockfd) {
+    struct sockaddr_in6 localaddr = getLocalAddr(sockfd);
+    struct sockaddr_in6 peeraddr = getPeerAddr(sockfd);
+    if (localaddr.sin6_family == AF_INET) {
+        const struct sockaddr_in *laddr4 = reinterpret_cast<struct sockaddr_in *>(&localaddr);
+        const struct sockaddr_in *raddr4 = reinterpret_cast<struct sockaddr_in *>(&peeraddr);
+        return laddr4->sin_port == raddr4->sin_port
+        && laddr4->sin_addr.s_addr == raddr4->sin_addr.s_addr;
+    } else if (localaddr.sin6_family == AF_INET6) {
+        return localaddr.sin6_port == peeraddr.sin6_port &&
+               memcmp(&localaddr.sin6_addr, &peeraddr.sin6_addr,
+                      sizeof localaddr.sin6_addr) == 0;
+    } else {
+        return false;
+    }
 }

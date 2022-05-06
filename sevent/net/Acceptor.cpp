@@ -4,23 +4,24 @@
 #include "SocketsOps.h"
 #include <errno.h>
 #include <string.h>
+#include "../base/Logger.h"
 
 using namespace std;
 using namespace sevent;
 using namespace sevent::net;
 
-Acceptor::Acceptor(EventLoop *loop, const InetAddress &addr,
-                   ConnectCallBack cb, bool reuseAddr)
+Acceptor::Acceptor(EventLoop *loop, const InetAddress &addr, ConnectCallBack cb)
     : Channel(sockets::createNBlockfd(addr.family()), loop),
-      idleFd(sockets::openIdelFd()), isListening(false),
+      idleFd(sockets::openIdelFd()), isListening(false), addr(addr),
       connectCallBack(std::move(cb)) {
-    //TODO Config/Option class
-    sockets::setReuseAddr(fd, reuseAddr);
-    sockets::bind(fd, addr.getSockAddr(), sockets::addr6len);
+    sockets::setKeepAlive(fd, true);
+    sockets::setReuseAddr(fd, true);
 }
 
 void Acceptor::listen() {
     ownerLoop->assertInOwnerThread();
+    LOG_TRACE << "Acceptor::listen() - start bind and listen, addr = " << addr.toStringIpPort();
+    sockets::bind(fd, addr.getSockAddr(), sockets::addr6len);
     isListening = true;
     sockets::dolisten(fd);
     Channel::enableReadEvent();

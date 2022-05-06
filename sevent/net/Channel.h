@@ -2,7 +2,6 @@
 #define SEVENT_NET_CHANNEL_H
 
 #include "../base/noncopyable.h"
-#include <functional>
 
 namespace sevent {
 namespace net {
@@ -10,18 +9,17 @@ class EventLoop;
 // Channel 是fd的抽象,EventLoop通过Poller间接管理Channel
 class Channel : noncopyable {
 public:
-    using EventCallback = std::function<void()>;
-    
     Channel(int fd, EventLoop *loop);
 
     void handleEvent();
     void setRevents(int revt) { revents = revt; }
     bool isNoneEvent() const { return events == NoneEvent; }
+    bool isEnableWrite() const { return events & WriteEvent; }
     // 更新/移出监听事件列表(Poller)
     void enableReadEvent() { events |= ReadEvent; updateEvent(); }
-    void enablewriteEvent() { events |= WriteEvent; updateEvent(); }
+    void enableWriteEvent() { events |= WriteEvent; updateEvent(); }
     void disableReadEvent() { events &= ~ReadEvent; updateEvent(); }
-    void disablewriteEvent() { events &= ~WriteEvent; updateEvent(); }
+    void disableWriteEvent() { events &= ~WriteEvent; updateEvent(); }
     void disableAll() { events = NoneEvent; updateEvent(); }
     // 移出监听事件列表和channelMap(Poller)
     void remove();
@@ -43,6 +41,9 @@ protected:
     virtual void handleWrite() {}
     virtual void handleClose() {}
     virtual void handleError() {}
+
+    void setFd(int sockfd);
+    void setFdUnSafe(int sockfd) { fd = sockfd; }
 
 protected:
     int fd;

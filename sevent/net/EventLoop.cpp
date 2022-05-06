@@ -24,15 +24,20 @@ EventLoop::EventLoop(const std::string &name)
     if (!threadEvLoop)
         threadEvLoop = this;
     else
-        LOG_FATAL << "EventLoop - "<< loopName <<" already exists in this thread, create failed";
+        LOG_FATAL << "EventLoop - " << loopName
+                  << " already exists in this thread " << threadId
+                  << ", create failed";
 }
 
-// TODO
-EventLoop::~EventLoop() { threadEvLoop = nullptr; }
+EventLoop::~EventLoop() { 
+    LOG_TRACE << "EventLoop::~EventLoop() - " << loopName << " of thread " << threadId
+            << " destructs in thread " << CurrentThread::gettid();
+    threadEvLoop = nullptr; 
+}
 
 void EventLoop::loop() { 
-    assertInOwnerThread(); 
-    LOG_TRACE << "EventLoop - "<< loopName <<":" << this << ", start looping";
+    assertInOwnerThread();
+    LOG_TRACE << "EventLoop::loop() - start looping, " << loopName << " = " << this;
     while (!isQuit) {
         poller->poll(pollTimeout);
         vector<Channel *> &activeChannels = poller->getActiveChannels();
@@ -41,7 +46,7 @@ void EventLoop::loop() {
         }
         doPendingTasks();
     }
-    LOG_TRACE << "EventLoop - "<< loopName <<":" << this << ", stop looping";
+    LOG_TRACE << "EventLoop::loop() - stop looping, " << loopName << " = " << this;
 }
 
 void EventLoop::quit() { 
@@ -97,14 +102,14 @@ bool EventLoop::isInOwnerThread() const {
 }
 void EventLoop::assertInOwnerThread() const {
     if (!isInOwnerThread()) {
-        LOG_FATAL << "EventLoop::assertInOwnThread - "<< loopName <<":" << this
+        LOG_FATAL << "EventLoop::assertInOwnThread() - "<< loopName <<":" << this
                   << " was belonged to threadId: " << threadId
                   << ", current threadId: " << CurrentThread::gettid();
     }
 }
 void EventLoop::assertInOwnerThread(const std::string &msg) const {
     if (!isInOwnerThread()) {
-        LOG_FATAL << "EventLoop::assertInOwnThread - "<< loopName <<":" << this
+        LOG_FATAL << "EventLoop::assertInOwnThread() - "<< loopName <<":" << this
                   << " was belonged to threadId: " << threadId
                   << ", current threadId: " << CurrentThread::gettid() << ", " << msg;
     }    
