@@ -23,7 +23,7 @@ TcpConnection::TcpConnection(EventLoop *loop, int sockfd, int64_t connId,
 TcpConnection::~TcpConnection() {
     LOG_TRACE << "TcpConnection::~TcpConnection(), id = " << id
               << ", fd = " << fd << ", " << peerAddr.toStringIpPort();
-    // 真正关闭fd
+    // 真正关闭fd // forceClose也会关闭fd, fd = -fd - 1
     if (fd >= 0)
         sockets::close(fd);
     assert(state == disconnected);
@@ -195,21 +195,25 @@ void TcpConnection::onConnection() {
 
 void TcpConnection::handleRead() {
     ownerLoop->assertInOwnerThread();
-    ssize_t n = inputBuf.readFd(fd);
-    if (n > 0) {
-        if (tcpHandler)
-            tcpHandler->onMessage(shared_from_this(), inputBuf);
-    } else if (n == 0) { //对端关闭
-        LOG_TRACE << "TcpConnection::handleRead() - read = 0";
-        handleClose();
-    } else {
-        handleError();
+    if (state != disconnected) {
+        ssize_t n = inputBuf.readFd(fd);
+        if (n > 0) {
+            if (tcpHandler)
+                tcpHandler->onMessage(shared_from_this(), inputBuf);
+        } else if (n == 0) { //对端关闭
+            LOG_TRACE << "TcpConnection::handleRead() - read = 0";
+            handleClose();
+        } else {
+            handleError();
+        }
     }
 }
 
 void TcpConnection::handleWrite() {
     // 一旦发生错误, handleRead会读到0
     ownerLoop->assertInOwnerThread();
+    if (state == disconnected) 
+        return;
     if (Channel::isEnableWrite()) {
         ssize_t n = outputBuf.writeFd(fd);
         if (n > 0) {
@@ -254,6 +258,8 @@ void TcpConnection::handleClose() {
 }
 
 void TcpConnection::handleError() {
+    if (state == disconnected)
+        return;
     int err = sockets::getSocketError(fd);
     LOG_ERROR << "TcpConnection::handleError(), id = " << id << ", fd = " << fd
               << ", SO_ERROR = " << err << " ," << peerAddr.toStringIpPort();
@@ -269,9 +275,10 @@ void TcpConnection::removeItself() {
 
 void TcpConnection::forceClose() {
     if (state == connected || state == disconnecting) {
-        // 若runInLoop, 则有可能在发生在handleWrite之前
+        // 若runInLoop, 则forceClose有可能在发生在handleWrite之前
         // 无论runInLoop还是queueInLoop, 都移除监听事件和close, 导致可能会丢失数据
-        ownerLoop->queueInLoop(std::bind(&TcpConnection::forceCloseInLoop, shared_from_this()));
+        // ownerLoop->queueInLoop(std::bind(&TcpConnection::forceCloseInLoop, shared_from_this()));
+        ownerLoop->runInLoop(std::bind(&TcpConnection::forceCloseInLoop, shared_from_this()));
     }
 }
 
@@ -281,7 +288,7 @@ void TcpConnection::forceCloseInLoop() {
         setTcpState(disconnecting);
         handleClose();
         sockets::close(fd);
-        fd = -fd - 1;
+        fd = -fd - 1; // 
     }
 }
 int TcpConnection::setSockOpt(int level, int optname, const int *optval) {

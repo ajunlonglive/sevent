@@ -2,11 +2,8 @@
 #define SEVENT_NET_TCPCLIENT_H
 
 #include "../base/noncopyable.h"
-#include "TcpConnectionHolder.h"
-#include <stdint.h>
 #include <atomic>
 #include <memory>
-#include <mutex>
 
 namespace sevent {
 namespace net {
@@ -15,36 +12,34 @@ class Connector;
 class EventLoop;
 class InetAddress;
 class TcpHandler;
-class TcpConnection;
 
-class TcpClient : noncopyable, public TcpConnectionHolder {
+class TcpClient : noncopyable {
 public:
     TcpClient(EventLoop *loop, const InetAddress &addr);
     ~TcpClient();
-    
+    // connect, 线程安全
     void connect();
-    // 关闭连接, 包括已经连接或正在连接
+    // 关闭连接, 包括已经连接或正在连接(线程安全)
     void shutdown();
-    // 关闭处于正在连接的fd, (对于已经连接的connection无效)
-    void stop();
+    // 关闭连接, 包括已经连接或正在连接(线程安全)
+    void forceClose();
 
-    void setRetry(bool b) { retry = b; }
-    void setTcpHandler(TcpHandler *handler) { tcpHandler = handler; }
+    // 出错时重试次数, 默认-1(无限次), 0(不重试)
+    // 出错时会重试: 0.5s, 1s, 2s, .. 30s (比如:Connection refused)
+    void setRetryCount(int count);
+    // 连接的超时时间(秒), 默认-1(<=0 无限)
+    void setTimeout(double seconds);
+    void setTcpHandler(TcpHandler *handler);
     EventLoop *getOwnerLoop() const { return ownerLoop; }
+    const InetAddress &getServerAddr() const;
+
 private:
     Connector *createConnector(const InetAddress &addr);
-    void onConnection(int sockfd);
-    void removeConnection(int64_t id) override;
 
 private:
-    bool retry;
     std::atomic<bool> started;
     EventLoop *ownerLoop;
-    TcpHandler *tcpHandler;
-    int64_t nextId;
     std::shared_ptr<Connector> connector;
-    std::shared_ptr<TcpConnection> connection;
-    std::mutex mtx;
 };
 
 } // namespace net

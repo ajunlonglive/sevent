@@ -13,6 +13,7 @@ namespace net {
 class EventLoop;
 class TcpHandler;
 class TcpClient;
+class Connector;
 class TcpServer;
 class TcpConnectionHolder;
 
@@ -61,6 +62,7 @@ private:
     // for TcpServer
     friend class TcpServer;
     friend class TcpClient;
+    friend class Connector;
     // for Acceptor::handleRead -> TcpServer::onConnection -> onConnection
     void onConnection();
     void setTcpHolder(TcpConnectionHolder *holder) { tcpHolder = holder; }

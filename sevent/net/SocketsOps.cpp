@@ -87,7 +87,7 @@ int sockets::connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
 int sockets::inet_pton(int af, const char *src, void *dst) {
     int ret = ::inet_pton(af, src, dst);
     if (ret <= 0)
-        LOG_SYSERR << "sockets::inet_pton() failed";
+        LOG_SYSERR << "sockets::inet_pton() failed, ip = " << src;
     return ret;
 }
 
