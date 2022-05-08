@@ -1,8 +1,12 @@
 #include "InetAddress.h"
 
+#include "../base/Logger.h"
 #include "EndianOps.h"
 #include "SocketsOps.h"
+#include <assert.h>
+#include <netdb.h>
 #include <string.h>
+#include <thread>
 using namespace std;
 using namespace sevent;
 using namespace sevent::net;
@@ -70,4 +74,22 @@ string InetAddress::toStringIpPort() const {
 }
 uint16_t InetAddress::getPortHost() const {
     return sockets::netToHost16(addr.sin_port);
+}
+
+bool InetAddress::resolve(const std::string& hostname, InetAddress *result) {
+    thread_local char buf[64 * 1024];
+    struct hostent hent;
+    struct hostent* he = NULL;
+    int herrno = 0;
+    memset(&hent, 0, sizeof(hent));
+    int ret = gethostbyname_r(hostname.c_str(), &hent, buf, sizeof(buf), &he, &herrno);
+    if (ret == 0 && he != NULL) {
+        assert(he->h_addrtype == AF_INET && he->h_length == sizeof(uint32_t));
+        result->addr.sin_addr = *reinterpret_cast<struct in_addr*>(he->h_addr);
+        return true;
+    } else {
+        if (ret)
+            LOG_SYSERR << "InetAddress::resolve";
+        return false;
+    }    
 }

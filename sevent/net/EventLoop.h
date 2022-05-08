@@ -43,10 +43,10 @@ public:
     void queueInLoop(std::function<void()> cb);
 
     // Timestamp::now, microseconds since the Epoch, 1970-01-01 00:00:00 +0000 (UTC)
-    // 在time时间运行, 间隔interval秒再次运行(0运行一次)
-    TimerId addTimer(Timestamp time, std::function<void()> cb, double interval = 0.0);
-    // 在second秒后运行(0立即运行), 间隔interval秒再次运行(0运行一次) (0.1秒->microsecond)
-    TimerId addTimer(double second, std::function<void()> cb, double interval = 0.0);
+    // 在time时间运行, 间隔interval毫秒再次运行(0运行一次)
+    TimerId addTimer(Timestamp time, std::function<void()> cb, int64_t interval = 0);
+    // 在millisecond后运行, 间隔interval毫秒再次运行(0运行一次)
+    TimerId addTimer(int64_t millisecond, std::function<void()> cb, int64_t interval = 0);
     void cancelTimer(TimerId timerId);
 
     const std::string getLoopName() { return loopName; }

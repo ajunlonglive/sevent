@@ -20,10 +20,6 @@ Connector::Connector(EventLoop *loop, const InetAddress &sAddr)
       tcpHandler(nullptr), serverAddr(sAddr) {}
 Connector::~Connector() {
     LOG_TRACE << "Connector::~Connector()";
-    // TODO
-    // 在析构时, 才真正释放TcpConnection?
-    // 在onConnection时 发生析构
-    // 或者移动到TcpClient析构
 }
 
 void Connector::connect() {
@@ -92,8 +88,15 @@ void Connector::doTimeout() {
             sockets::close(fd);
         }
         setState(disconnected);
-        LOG_TRACE << "Connector::doTimeout(), timeout = " << timeout;
+        if (timeoutCallBacK)
+            timeoutCallBacK();
+        LOG_TRACE << "Connector::doTimeout(), timeout = " << timeout << "ms";
     }
+}
+
+void Connector::setTimeout(int64_t millisecond, std::function<void()> cb) {
+    timeout = millisecond;
+    timeoutCallBacK = std::move(cb);
 }
 
 // 出错时重试
@@ -107,22 +110,13 @@ void Connector::retry() {
                   << serverAddr.toStringIpPort() << " in " << retryMs
                   << " milliseconds, retry = "
                   << (retryCur >= 0 ? retryCount - retryCur : -1);
-        ownerLoop->addTimer(retryMs / 1000, std::bind(&Connector::doconnect, shared_from_this()));
+        ownerLoop->addTimer(retryMs, std::bind(&Connector::doconnect, shared_from_this()));
         retryMs = retryMs * 2 < maxRetryDelayMs ? retryMs * 2 : maxRetryDelayMs;
     } else {
         LOG_TRACE << "Connector::retry() - is stop, isStop = " << isStop
                   << ", retry = " << retryCur;
     }
 }
-// void Connector::restart() {
-//     ownerLoop->assertInOwnerThread();
-//     stop();
-//     retryMs = minRetryDelayMs;
-//     isStop = false;
-//     setState(disconnected);
-//     doconnect();
-//     // TODO connected 状态 无法stop
-// }
 
 void Connector::stop() {
     isStop = true;
@@ -207,6 +201,7 @@ void Connector::handleError() {
 }
 
 void Connector::onConnection() {
+    // TODO setSocketOpt
     setState(connected);
     InetAddress localAddr(sockets::getLocalAddr(fd));
     InetAddress peerAddr(sockets::getPeerAddr(fd));
@@ -222,5 +217,5 @@ void Connector::removeConnection(int64_t id) {
     ownerLoop->assertInOwnerThread();
     connection.reset();
     setState(disconnected);
-    LOG_TRACE << "Connector::removeConnection(), id = " << id;
+    // LOG_TRACE << "Connector::removeConnection(), id = " << id;
 }

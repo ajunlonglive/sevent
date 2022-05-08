@@ -24,7 +24,21 @@ double Timestamp::timeDifference(Timestamp high, Timestamp low){
     return static_cast<double>(diff) / Timestamp::microSecondUnit;
 }
 
-Timestamp Timestamp::addTime(Timestamp t, double second) {
-    int64_t msec = static_cast<int64_t>(second * Timestamp::microSecondUnit);
+Timestamp Timestamp::addTime(Timestamp t, int64_t millisecond) {
+    int64_t msec = static_cast<int64_t>(millisecond * 1000);
     return Timestamp(t.getMicroSecond() + msec);
 }
+// Timestamp Timestamp::addTime(Timestamp t, double second) {
+//     int64_t msec = static_cast<int64_t>(second * Timestamp::microSecondUnit);
+//     return Timestamp(t.getMicroSecond() + msec);
+// }
+
+// Timestamp Timestamp::addSecond(Timestamp t, int64_t second) {
+//     return addTime(t, second * 1000);
+// }
+// Timestamp Timestamp::addMinute(Timestamp t, int64_t minute) {
+// }
+// Timestamp Timestamp::addHour(Timestamp t, int64_t hour) {
+// }
+// Timestamp Timestamp::addDay(Timestamp t, int64_t day) {
+// }

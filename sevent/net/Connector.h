@@ -24,14 +24,13 @@ public:
     ~Connector();
 
     void connect();
-    // void restart();
     // 关闭连接, 包括已经连接或正在连接
     void stop();
     void forceClose();
     
     void setTcpHandler(TcpHandler *handler) { tcpHandler = handler; }
-    // 正在连接时的超时时间(秒), 默认-1(<=0 无限)
-    void setTimeout(double seconds) { timeout = seconds; }
+    // 正在连接时的超时时间, 默认-1(<=0 无限)
+    void setTimeout(int64_t millisecond, std::function<void()> cb);
     void retry();
     // 出错时重试次数, 默认-1(无限次), 0(不重试)
     // 出错时会重试: 0.5s, 1s, 2s, .. 30s (比如:Connection refused)
@@ -58,14 +57,15 @@ private:
     int retryMs;
     int retryCount;
     int retryCur;
-    double timeout;
+    int64_t timeout;
     State state;
     TcpHandler *tcpHandler;
     InetAddress serverAddr;
     std::shared_ptr<TcpConnection> connection;
+    std::function<void()> timeoutCallBacK;
     static int64_t nextId;
     static const int maxRetryDelayMs = 30 * 1000; // 30000ms
-    static const int minRetryDelayMs = 500; // TODO 500ms
+    static const int minRetryDelayMs = 500; // 500ms
 };
 
 } // namespace net

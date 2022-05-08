@@ -18,8 +18,7 @@ TimerfdChannel *TimerManager::createChannel() {
     return new TimerfdChannel(ownerLoop,std::bind(&TimerManager::handleExpired, this));
 }
 
-TimerId TimerManager::addTimer(std::function<void()> cb, Timestamp expired,
-                               double interval) {
+TimerId TimerManager::addTimer(std::function<void()> cb, Timestamp expired, int64_t interval) {
     Timer::ptr timer(new Timer(std::move(cb), expired, interval));
     TimerId id(timer);
     ownerLoop->runInLoop(std::bind(&TimerManager::addTimerInLoop, this, std::move(timer)));

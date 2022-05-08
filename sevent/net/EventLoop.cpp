@@ -115,13 +115,13 @@ void EventLoop::assertInOwnerThread(const std::string &msg) const {
     }    
 }
 // Timestamp::now, microseconds since the Epoch, 1970-01-01 00:00:00 +0000 (UTC)
-TimerId EventLoop::addTimer(Timestamp time, function<void()> cb, double interval) {
+TimerId EventLoop::addTimer(Timestamp time, function<void()> cb, int64_t interval) {
     
     return timerManager->addTimer(std::move(cb), time, interval);
 }
-// 在second秒后运行, 间隔interval秒再次运行(0运行一次)
-TimerId EventLoop::addTimer(double second, std::function<void()> cb, double interval) {
-    Timestamp time(Timestamp::addTime(Timestamp::now(), second));
+// 在millisecond秒后运行, 间隔interval毫秒再次运行(0运行一次)
+TimerId EventLoop::addTimer(int64_t millisecond, std::function<void()> cb, int64_t interval) {
+    Timestamp time(Timestamp::addTime(Timestamp::now(), millisecond));
     return timerManager->addTimer(std::move(cb), time, interval);
 }
 void EventLoop::cancelTimer(TimerId timerId) {

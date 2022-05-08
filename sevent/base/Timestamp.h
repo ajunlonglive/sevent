@@ -16,9 +16,15 @@ public:
     std::string toString();
 
     bool operator<(Timestamp other) { return microSecond < other.microSecond; }
+    bool operator==(Timestamp other) { return microSecond == other.microSecond; }
 
     static double timeDifference(Timestamp high, Timestamp low);
-    static Timestamp addTime(Timestamp t, double second);
+    static Timestamp addTime(Timestamp t, int64_t millisecond);
+    // static Timestamp addSecond(Timestamp t, int64_t second);
+    // static Timestamp addMinute(Timestamp t, int64_t minute);
+    // static Timestamp addHour(Timestamp t, int64_t hour);
+    // static Timestamp addDay(Timestamp t, int64_t day);
+    // static Timestamp addMonth(Timestamp t, int64_t Month);
 
 public:
     static const int microSecondUnit = 1000000;

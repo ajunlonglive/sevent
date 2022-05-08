@@ -5,9 +5,9 @@ using namespace sevent;
 using namespace sevent::net;
 
 
-Timer::Timer(function<void()> cb, Timestamp expired, double interval)
+Timer::Timer(function<void()> cb, Timestamp expired, int64_t interval)
     : timerCallback(std::move(cb)), expired(expired), interval(interval),
-      repeat(interval > 0.0) {}
+      repeat(interval > 0) {}
 
 void Timer::resetExpired(Timestamp now) {
     if (repeat) {

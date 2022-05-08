@@ -18,8 +18,7 @@ public:
     ~TimerManager();
 
     // 保证在loop线程执行
-    TimerId addTimer(std::function<void()> cb, Timestamp expired,
-                     double interval);
+    TimerId addTimer(std::function<void()> cb, Timestamp expired, int64_t interval);
     // 保证在loop线程执行
     void cancel(TimerId timerId);
 

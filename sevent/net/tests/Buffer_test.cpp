@@ -1,5 +1,5 @@
 #include "../Buffer.h"
-#include <assert.h>
+#include "myassert.h"
 #include <iostream>
 #include <string.h>
 

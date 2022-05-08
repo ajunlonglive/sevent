@@ -11,7 +11,7 @@ namespace net {
 
 class Timer : noncopyable {
 public:
-    Timer(std::function<void()> cb, Timestamp expired, double interval = 0.0);
+    Timer(std::function<void()> cb, Timestamp expired, int64_t interval = 0);
 
     // now + interval
     void resetExpired(Timestamp now);
@@ -28,7 +28,7 @@ public:
 private:
     const std::function<void()> timerCallback;
     Timestamp expired;
-    const double interval; //second
+    const int64_t interval; //millisecond
     const bool repeat;
 
 };

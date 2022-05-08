@@ -47,6 +47,6 @@ const InetAddress &TcpClient::getServerAddr() const {
 }
 
 void TcpClient::setRetryCount(int count) { connector->setRetryCount(count); }
-void TcpClient::setTimeout(double seconds) {
-    connector->setTimeout(seconds);
+void TcpClient::setTimeout(int64_t millisecond, std::function<void()> cb) {
+    connector->setTimeout(millisecond, std::move(cb));
 }

@@ -2,7 +2,9 @@
 #define SEVENT_NET_TCPCLIENT_H
 
 #include "../base/noncopyable.h"
+#include <stdint.h>
 #include <atomic>
+#include <functional>
 #include <memory>
 
 namespace sevent {
@@ -15,6 +17,7 @@ class TcpHandler;
 
 class TcpClient : noncopyable {
 public:
+    using TimeoutCB = std::function<void()>;
     TcpClient(EventLoop *loop, const InetAddress &addr);
     ~TcpClient();
     // connect, 线程安全
@@ -27,8 +30,8 @@ public:
     // 出错时重试次数, 默认-1(无限次), 0(不重试)
     // 出错时会重试: 0.5s, 1s, 2s, .. 30s (比如:Connection refused)
     void setRetryCount(int count);
-    // 连接的超时时间(秒), 默认-1(<=0 无限)
-    void setTimeout(double seconds);
+    // 连接的超时时间(毫秒), 默认-1(<=0 无限)
+    void setTimeout(int64_t millisecond, std::function<void()> cb = TimeoutCB());
     void setTcpHandler(TcpHandler *handler);
     EventLoop *getOwnerLoop() const { return ownerLoop; }
     const InetAddress &getServerAddr() const;

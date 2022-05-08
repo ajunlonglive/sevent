@@ -31,6 +31,8 @@ public:
     uint16_t getPortHost() const;
     sa_family_t family() const { return addr.sin_family; }
 
+    static bool resolve(const std::string& hostname, InetAddress *result);
+
 private:
     union {
         struct sockaddr_in addr;
