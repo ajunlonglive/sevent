@@ -1,8 +1,9 @@
 #include "EpollPoller.h"
-
-#include "../base/Logger.h"
-#include "Channel.h"
-#include "EventLoop.h"
+#ifndef _WIN32
+#include "sevent/base/Logger.h"
+#include "sevent/net/Channel.h"
+#include "sevent/net/EventLoop.h"
+#include "sevent/net/SocketsOps.h"
 #include <assert.h>
 #include <sys/epoll.h>
 #include <unistd.h>
@@ -22,7 +23,7 @@ EpollPoller::EpollPoller()
     if (epfd < 0)
         LOG_SYSFATAL << "EpollPoller::EpollPoller() - epoll_create1 err";
 }
-EpollPoller::~EpollPoller() { ::close(epfd); };
+EpollPoller::~EpollPoller() { sockets::close(epfd); };
 
 int EpollPoller::doPoll(int timeout) {
     int count = ::epoll_wait(epfd, &*eventList.begin(),
@@ -33,7 +34,7 @@ int EpollPoller::doPoll(int timeout) {
 void EpollPoller::updateChannel(Channel *channel) {
     // ownerLoop->assertInOwnerThread();
     int status = channel->getStatus();
-    int fd = channel->getFd();
+    socket_t fd = channel->getFd();
     if (status == removed)
         return;
     if (status == ready) {
@@ -57,7 +58,7 @@ void EpollPoller::updateChannel(Channel *channel) {
 
 void EpollPoller::removeChannel(Channel *channel) {
     // ownerLoop->assertInOwnerThread();
-    int fd = channel->getFd();
+    socket_t fd = channel->getFd();
     // assert(channelMap.find(fd) != channelMap.end());
     // assert(channelMap.find(fd)->second == channel);
     channelMap.erase(fd);
@@ -70,7 +71,7 @@ void EpollPoller::update(int op, Channel *channel) {
     struct epoll_event event;
     event.data.ptr = channel;
     event.events = channel->getEvents();
-    int fd = channel->getFd();
+    socket_t fd = channel->getFd();
     int ret = ::epoll_ctl(epfd, op, fd, &event);
     if (ret < 0) {
         if (op == EPOLL_CTL_DEL)
@@ -93,3 +94,5 @@ void EpollPoller::fillActiveChannels(int count) {
     if (static_cast<size_t>(count) == eventList.size())
         eventList.resize(eventList.size() * 2);
 }
+
+#endif

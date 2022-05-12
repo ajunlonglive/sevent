@@ -1,10 +1,11 @@
-#include "Acceptor.h"
-#include "EventLoop.h"
-#include "InetAddress.h"
-#include "SocketsOps.h"
+#include "sevent/net/Acceptor.h"
+
+#include "sevent/base/Logger.h"
+#include "sevent/net/EventLoop.h"
+#include "sevent/net/InetAddress.h"
+#include "sevent/net/SocketsOps.h"
 #include <errno.h>
 #include <string.h>
-#include "../base/Logger.h"
 
 using namespace std;
 using namespace sevent;
@@ -26,23 +27,27 @@ void Acceptor::listen() {
     sockets::dolisten(fd);
     Channel::enableReadEvent();
 }
-int Acceptor::accept() {
+socket_t Acceptor::accept() {
     InetAddress peerAddr;
     socklen_t addrlen = sockets::addr6len;
-    int connfd = sockets::doaccept(fd, peerAddr.getSockAddr(), &addrlen);
+    socket_t connfd = sockets::doaccept(fd, peerAddr.getSockAddr(), &addrlen);
     if (connfd >= 0) {
+        LOG_TRACE << "Acceptor::accept(), fd = " << connfd;
         if (connectCallBack) {
             connectCallBack(connfd, peerAddr);
         } else {
             sockets::close(connfd);
         }
     } else {
-        if (errno == EMFILE) {
+        #ifndef _WIN32 // TODO WSAEMFILE 
+        if (sockets::getErrno() == EMFILE) {
             sockets::close(idleFd);
             idleFd = sockets::accept(fd, nullptr, nullptr);
             sockets::close(idleFd);
             idleFd = sockets::openIdelFd();
         }
+        #endif
+        // LOG_TRACE << "Acceptor::accept() - err, fd = " << connfd;
     }
     return connfd;
 }
@@ -54,5 +59,7 @@ void Acceptor::handleRead() {
 
 Acceptor::~Acceptor() {
     Channel::remove();
+    #ifndef _WIN32
     sockets::close(idleFd);
+    #endif
 }

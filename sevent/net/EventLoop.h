@@ -1,9 +1,9 @@
 #ifndef SEVENT_NET_EVENTLOOP_H
 #define SEVENT_NET_EVENTLOOP_H
 
-#include "../base/noncopyable.h"
-#include "../base/Timestamp.h"
-#include "TimerId.h"
+#include "sevent/base/noncopyable.h"
+#include "sevent/base/Timestamp.h"
+#include "sevent/net/TimerId.h"
 
 #include <atomic>
 #include <functional>
@@ -50,7 +50,9 @@ public:
     void cancelTimer(TimerId timerId);
 
     const std::string getLoopName() { return loopName; }
+    const Timestamp getPollTime() const;
 
+    static const int pollTimeout = 10000; // 10秒(10000 millsecond)
 private:
     void wakeup();
     void doPendingTasks();
@@ -58,13 +60,13 @@ private:
 private:
     bool isTasking;
     std::atomic<bool> isQuit;
-    const pid_t threadId;
+    const int threadId;
+    int timeout;
     std::unique_ptr<Poller> poller;
-    std::unique_ptr<TimerManager> timerManager;
     std::unique_ptr<WakeupChannel> wakeupChannel;
+    std::unique_ptr<TimerManager> timerManager;
     thread_local static EventLoop *threadEvLoop;
 
-    const int pollTimeout = 10000; // 10秒(10000 millsecond)
     const std::string loopName;
 
     std::mutex mtx;

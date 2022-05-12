@@ -1,6 +1,8 @@
 #ifndef SEVENT_NET_EPOLLPOLLER_H
 #define SEVENT_NET_EPOLLPOLLER_H
 
+#ifndef _WIN32
+
 #include "Poller.h"
 
 struct epoll_event;
@@ -8,7 +10,7 @@ struct epoll_event;
 namespace sevent {
 namespace net {
 
-class EpollPoller : public Poller{
+class EpollPoller : public Poller {
 public:
     EpollPoller();
     ~EpollPoller() override;
@@ -18,15 +20,14 @@ public:
 
     void updateChannel(Channel *channel) override;
 
-    void removeChannel(Channel* channel) override;
-
+    void removeChannel(Channel *channel) override;
 
 private:
     void fillActiveChannels(int count) override;
     void update(int operation, Channel *channel);
 
 private:
-    int epfd;
+    socket_t epfd;
     std::vector<epoll_event> eventList;
 
     static const int initSize = 16;
@@ -34,5 +35,5 @@ private:
 
 } // namespace net
 } // namespace sevent
-
+#endif
 #endif

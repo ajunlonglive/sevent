@@ -1,8 +1,7 @@
 #ifndef SEVENT_NET_WAKEUPCHANNEL_H
 #define SEVENT_NET_WAKEUPCHANNEL_H
 
-#include "Channel.h"
-#include <memory>
+#include "sevent/net/Channel.h"
 namespace sevent {
 namespace net {
 class Channel;
@@ -15,8 +14,12 @@ public:
     void wakeup();
 
 private:
-    int createEventFd();
+    socket_t createEventFd();
     void handleRead() override;
+private:
+#ifdef _WIN32
+    socket_t fds[2];
+#endif
 };
 
 } // namespace net

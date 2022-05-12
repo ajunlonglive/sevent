@@ -1,9 +1,9 @@
 #ifndef SEVENT_NET_CONNECTOR_H
 #define SEVENT_NET_CONNECTOR_H
 
-#include "Channel.h"
-#include "InetAddress.h"
-#include "TcpConnectionHolder.h"
+#include "sevent/net/Channel.h"
+#include "sevent/net/InetAddress.h"
+#include "sevent/net/TcpConnectionHolder.h"
 #include <stdint.h>
 #include <functional>
 #include <memory>

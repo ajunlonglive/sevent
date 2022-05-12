@@ -1,8 +1,8 @@
-#include "../Channel.h"
-#include "../EventLoop.h"
-#include "../../base/Timestamp.h"
-#include "../../base/CurrentThread.h"
-
+#ifndef _WIN32
+#include "sevent/net/Channel.h"
+#include "sevent/net/EventLoop.h"
+#include "sevent/base/Timestamp.h"
+#include "sevent/base/CurrentThread.h"
 #include <assert.h>
 #include <functional>
 #include <iostream>
@@ -77,6 +77,7 @@ void print(const char* msg) {
             msg, Timestamp::timeDifference(now, last));
     last = now;
 }
+
 int main() {
     EventLoop loop;
     PeriodicTimer timer(&loop, 1, std::bind(print, "PeriodicTimer"));
@@ -85,3 +86,5 @@ int main() {
     loop.loop();
     return 0;
 }
+
+#endif

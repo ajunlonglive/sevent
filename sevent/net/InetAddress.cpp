@@ -1,10 +1,13 @@
-#include "InetAddress.h"
+#include "sevent/net/InetAddress.h"
 
-#include "../base/Logger.h"
-#include "EndianOps.h"
-#include "SocketsOps.h"
+#include "sevent/base/Logger.h"
+#include "sevent/net/EndianOps.h"
+#include "sevent/net/SocketsOps.h"
 #include <assert.h>
+#ifndef _WIN32
 #include <netdb.h>
+#else
+#endif
 #include <string.h>
 #include <thread>
 using namespace std;
@@ -22,7 +25,7 @@ InetAddress::InetAddress(uint16_t port, bool ipv6, bool loopback) {
     if (!ipv6) {
         memset(&addr, 0, sizeof(addr));
         addr.sin_family = AF_INET;
-        in_addr_t ip = loopback ? INADDR_LOOPBACK : INADDR_ANY;
+        uint32_t ip = loopback ? INADDR_LOOPBACK : INADDR_ANY;
         addr.sin_addr.s_addr = sockets::hostToNet32(ip);
         addr.sin_port = sockets::hostToNet16(port);
     } else {
@@ -76,20 +79,27 @@ uint16_t InetAddress::getPortHost() const {
     return sockets::netToHost16(addr.sin_port);
 }
 
-bool InetAddress::resolve(const std::string& hostname, InetAddress *result) {
-    thread_local char buf[64 * 1024];
-    struct hostent hent;
-    struct hostent* he = NULL;
-    int herrno = 0;
-    memset(&hent, 0, sizeof(hent));
-    int ret = gethostbyname_r(hostname.c_str(), &hent, buf, sizeof(buf), &he, &herrno);
-    if (ret == 0 && he != NULL) {
-        assert(he->h_addrtype == AF_INET && he->h_length == sizeof(uint32_t));
-        result->addr.sin_addr = *reinterpret_cast<struct in_addr*>(he->h_addr);
-        return true;
+bool InetAddress::resolve(const std::string& hostname, InetAddress *iaddr) {
+    bool success = false;
+    struct addrinfo hints;
+    struct addrinfo *result;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC;    /* Allow IPv4 or IPv6 */
+    hints.ai_socktype = SOCK_STREAM; /* STREAM socket */
+    hints.ai_flags = AI_PASSIVE;    /* For wildcard IP address */
+    hints.ai_protocol = 0;          /* Any protocol */
+    hints.ai_canonname = NULL;
+    hints.ai_addr = NULL;
+    hints.ai_next = NULL;
+    int ret = ::getaddrinfo(hostname.c_str(), NULL, &hints, &result);
+    if (ret == 0 && result != NULL) {
+        iaddr->addr.sin_addr = reinterpret_cast<struct sockaddr_in*>(result->ai_addr)->sin_addr;
+        success = true;
     } else {
         if (ret)
-            LOG_SYSERR << "InetAddress::resolve";
-        return false;
-    }    
+            LOG_SYSERR << "InetAddress::resolve() - "<< gai_strerror(ret);
+        success = false;
+    }
+    ::freeaddrinfo(result); /* No longer needed */
+    return success;
 }

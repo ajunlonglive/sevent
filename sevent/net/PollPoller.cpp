@@ -1,6 +1,6 @@
-#include "PollPoller.h"
-
-#include "Channel.h"
+#include "sevent/net/PollPoller.h"
+#ifndef _WIN32
+#include "sevent/net/Channel.h"
 #include <assert.h>
 #include <poll.h>
 
@@ -65,6 +65,7 @@ void PollPoller::removeChannel(Channel* channel) {
         return;
     // assert(0 <= index && index < static_cast<int>(pollfdList.size()));
     struct pollfd &pfd = pollfdList[index];
+    (void)pfd;
     assert(pfd.fd == channel->getFd() || pfd.fd == -channel->getFd() - 1);
     // 移除channelMap 和 pollfdList
     channelMap.erase(channel->getFd());
@@ -77,3 +78,5 @@ void PollPoller::removeChannel(Channel* channel) {
         pollfdList.pop_back();
     }
 }
+
+#endif

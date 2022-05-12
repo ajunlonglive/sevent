@@ -1,7 +1,7 @@
 #ifndef SEVENT_BASE_LOGASYNAPPENDER_H
 #define SEVENT_BASE_LOGASYNAPPENDER_H
 
-#include "Logger.h"
+#include "sevent/base/Logger.h"
 #include "CountDownLatch.h"
 #include "FixedBuffer.h"
 #include <stdio.h>

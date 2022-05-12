@@ -1,12 +1,12 @@
-#include "TcpServer.h"
+#include "sevent/net/TcpServer.h"
 
-#include "../base/Logger.h"
-#include "Acceptor.h"
-#include "EventLoop.h"
-#include "EventLoopWorkers.h"
-#include "InetAddress.h"
-#include "SocketsOps.h"
-#include "TcpConnection.h"
+#include "sevent/base/Logger.h"
+#include "sevent/net/Acceptor.h"
+#include "sevent/net/EventLoop.h"
+#include "sevent/net/EventLoopWorkers.h"
+#include "sevent/net/InetAddress.h"
+#include "sevent/net/SocketsOps.h"
+#include "sevent/net/TcpConnection.h"
 
 using namespace std;
 using namespace sevent;
@@ -44,7 +44,7 @@ void TcpServer::start() {
     }
 }
 // Acceptor执行的回调
-void TcpServer::onConnection(int sockfd, const InetAddress &peerAddr) {
+void TcpServer::onConnection(socket_t sockfd, const InetAddress &peerAddr) {
     ownerLoop->assertInOwnerThread();
     EventLoop *worker = workers->getNextLoop();
 

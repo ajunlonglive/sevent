@@ -3,3 +3,6 @@ target_link_libraries(LogAsync_test sevent_base)
 
 add_executable(Logger_test Logger_test.cpp)
 target_link_libraries(Logger_test sevent_base)
+
+add_executable(LogStream_test LogStream_test.cpp)
+target_link_libraries(LogStream_test sevent_base)

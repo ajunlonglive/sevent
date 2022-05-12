@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 2.6)
-
 project(sevent CXX)
 
 #编译选项
@@ -21,6 +20,7 @@ set(CXX_FLAGS
  -std=c++11
  -rdynamic
  )
+
 if(CMAKE_BUILD_BITS EQUAL 32)
   list(APPEND CXX_FLAGS "-m32")
 endif()
@@ -31,8 +31,8 @@ set(CMAKE_BUILD_TYPE "Debug")
 set(CMAKE_CXX_FLAGS_DEBUG "-O0")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
 
-add_subdirectory(base)
-add_subdirectory(net)
+add_subdirectory(sevent/base)
+add_subdirectory(sevent/net)
 
 #目标文件路径
 # set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)

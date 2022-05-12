@@ -1,10 +1,10 @@
-#include "TcpConnection.h"
+#include "sevent/net/TcpConnection.h"
 
-#include "../base/Logger.h"
-#include "EventLoop.h"
-#include "SocketsOps.h"
-#include "TcpHandler.h"
-#include "TcpServer.h"
+#include "sevent/base/Logger.h"
+#include "sevent/net/EventLoop.h"
+#include "sevent/net/SocketsOps.h"
+#include "sevent/net/TcpHandler.h"
+#include "sevent/net/TcpServer.h"
 #include <assert.h>
 #include <functional>
 
@@ -12,7 +12,7 @@ using namespace std;
 using namespace sevent;
 using namespace sevent::net;
 
-TcpConnection::TcpConnection(EventLoop *loop, int sockfd, int64_t connId,
+TcpConnection::TcpConnection(EventLoop *loop, socket_t sockfd, int64_t connId,
                              const InetAddress &localAddr,
                              const InetAddress &peerAddr)
     : Channel(sockfd, loop), id(connId), state(connecting),
@@ -98,11 +98,19 @@ void TcpConnection::sendInLoopBuf(Buffer &buf) {
                 tcpHandler->onWriteComplete(shared_from_this()); 
         } else {
             n = 0;
-            if (errno != EAGAIN) {
+            #ifndef _WIN32
+            if (sockets::getErrno() != EAGAIN) {
                 LOG_SYSERR << "TcpConnection::sendInLoop() - failed";
-                if (errno == EPIPE || errno == ECONNRESET)
+                if (sockets::getErrno() == EPIPE || sockets::getErrno() == ECONNRESET)
                     isErr = true;
             }
+            #else
+            if (sockets::getErrno() != WSAEWOULDBLOCK) {
+                LOG_SYSERR << "TcpConnection::sendInLoop() - failed";
+                if (sockets::getErrno() == WSAECONNRESET)
+                    isErr = true;
+            }
+            #endif
         }
     }
 
@@ -147,11 +155,19 @@ void TcpConnection::sendInLoop(const void *data, size_t len) {
                 tcpHandler->onWriteComplete(shared_from_this()); 
         } else {
             n = 0;
-            if (errno != EAGAIN) {
+            #ifndef _WIN32
+            if (sockets::getErrno() != EAGAIN) {
                 LOG_SYSERR << "TcpConnection::sendInLoop() - failed";
-                if (errno == EPIPE || errno == ECONNRESET)
+                if (sockets::getErrno() == EPIPE || sockets::getErrno() == ECONNRESET)
                     isErr = true;
             }
+            #else
+            if (sockets::getErrno() != WSAEWOULDBLOCK) {
+                LOG_SYSERR << "TcpConnection::sendInLoop() - failed";
+                if (sockets::getErrno() == WSAECONNRESET)
+                    isErr = true;
+            }
+            #endif
         }
     }
 
@@ -288,7 +304,7 @@ void TcpConnection::forceCloseInLoop() {
         setTcpState(disconnecting);
         handleClose();
         sockets::close(fd);
-        fd = -fd - 1; // 
+        fd = -fd - 1; // TODO windows
     }
 }
 int TcpConnection::setSockOpt(int level, int optname, const int *optval) {

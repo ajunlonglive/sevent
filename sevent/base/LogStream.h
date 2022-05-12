@@ -1,8 +1,8 @@
 #ifndef SEVENT_BASE_LOGSTREAM
 #define SEVENT_BASE_LOGSTREAM
 
-#include "FixedBuffer.h"
-#include "noncopyable.h"
+#include "sevent/base/FixedBuffer.h"
+#include "sevent/base/noncopyable.h"
 #include <string>
 
 namespace sevent {

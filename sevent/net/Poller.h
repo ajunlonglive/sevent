@@ -1,15 +1,15 @@
 #ifndef SEVENT_NET_POLLER_H
 #define SEVENT_NET_POLLER_H
 
-#include "../base/noncopyable.h"
-#include "../base/Timestamp.h"
+#include "sevent/base/noncopyable.h"
+#include "sevent/base/Timestamp.h"
+#include "sevent/net/util.h"
 #include <map>
 #include <vector>
 namespace sevent {
 namespace net {
 
 class Channel;
-class EventLoop;
 
 class Poller : noncopyable {
 public:
@@ -29,12 +29,14 @@ public:
     std::vector<Channel *> &getActiveChannels() { return activeChannels; }
     Timestamp getPollTime() { return pollTime; }
 
+    static Poller *newPoller();
+
 protected:
     virtual void fillActiveChannels(int count) = 0;
 protected:
     Timestamp pollTime;
     std::vector<Channel *> activeChannels;
-    std::map<int, Channel *> channelMap;
+    std::map<socket_t, Channel *> channelMap;
 };
 
 } // namespace net

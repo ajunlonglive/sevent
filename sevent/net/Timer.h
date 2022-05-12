@@ -1,8 +1,8 @@
 #ifndef SEVENT_NET_TIMER_H
 #define SEVENT_NET_TIMER_H
 
-#include "../base/noncopyable.h"
-#include "../base/Timestamp.h"
+#include "sevent/base/noncopyable.h"
+#include "sevent/base/Timestamp.h"
 #include <stdint.h>
 #include <functional>
 #include <memory>

@@ -1,9 +1,9 @@
 #ifndef SEVENT_NET_TCPCONNECTION_H
 #define SEVENT_NET_TCPCONNECTION_H
 
-#include "Buffer.h"
-#include "Channel.h"
-#include "InetAddress.h"
+#include "sevent/net/Buffer.h"
+#include "sevent/net/Channel.h"
+#include "sevent/net/InetAddress.h"
 #include <stdint.h>
 #include <memory>
 #include <string>
@@ -26,7 +26,7 @@ class TcpConnection : private Channel,
                       public std::enable_shared_from_this<TcpConnection> {
 public:
     using ptr = std::shared_ptr<TcpConnection>;
-    TcpConnection(EventLoop *loop, int sockfd, int64_t connId,
+    TcpConnection(EventLoop *loop, socket_t sockfd, int64_t connId,
                   const InetAddress &localAddr, const InetAddress &peerAddr);
     ~TcpConnection();
     // thread safe

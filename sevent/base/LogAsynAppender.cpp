@@ -1,5 +1,6 @@
-#include "LogAsynAppender.h"
-#include "CommonUtil.h"
+#include "sevent/base/LogAsynAppender.h"
+#include "sevent/base/CommonUtil.h"
+#include <time.h>
 
 using namespace sevent;
 using namespace std;
@@ -54,9 +55,9 @@ void LogAsynAppender::process() {
         if (buffers_bak.size() > static_cast<size_t>(buffersLimit)) {
             char buf[256]{0};
             snprintf(buf, sizeof(buf),
-                     "Dropped log messages at %s, %zd larger buffers\n",
+                     "Dropped log messages at %s, %d larger buffers\n",
                      Timestamp::now().toString().c_str(),
-                     buffers_bak.size() - 2);
+                     static_cast<int>(buffers_bak.size() - 2));
             fputs(buf, stderr);
             output->write(buf, static_cast<int>(strlen(buf)));
             buffers_bak.resize(2);
@@ -131,16 +132,16 @@ void LogFile::write(const char *log, int len) {
     }
 }
 void LogFile::writeInternal(const char *log, int len) {
-    size_t n = fwrite_unlocked(log, 1, len, fp);
+    size_t n = CommonUtil::fwrite_unlocked(log, 1, len, fp);
     size_t remain = len - n;
     while (remain > 0) {
-        size_t tmp = fwrite_unlocked(log + n, 1, remain, fp);
+        size_t tmp = CommonUtil::fwrite_unlocked(log + n, 1, remain, fp);
         if (tmp == 0) {
             int err = ferror(fp);
             if (err) {
-                thread_local char errbuf[512] = {0};
+                // thread_local char errbuf[512] = {0};
                 fprintf(stderr, "LogFile::writeInternal() failed %s\n",
-                        strerror_r(err, errbuf, sizeof(errbuf)));
+                        CommonUtil::strerror_tl(err));
             }
             break;
         }
@@ -186,7 +187,7 @@ void LogFile::rollFile() {
         lastRoll = now;
         today = curday;
         fp = tmp;
-        setbuffer(fp, fpBuffer, sizeof(fpBuffer));
+        setvbuf(fp, fpBuffer, _IOFBF, sizeof(fpBuffer));
     }
 }
 string LogFile::getLogFileName(time_t now) {
@@ -197,7 +198,7 @@ string LogFile::getLogFileName(time_t now) {
     char buf[32];
     struct tm tm_time;
     now += g_gmtOffsetSec;
-    gmtime_r(&now, &tm_time);
+    CommonUtil::gmtime_r(&now, &tm_time);
     strftime(buf, sizeof buf, ".%Y%m%d-%H%M%S.", &tm_time);
     filename += buf;
     filename += CommonUtil::getHostname();

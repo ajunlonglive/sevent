@@ -1,13 +1,11 @@
-#include "EventLoop.h"
+#include "sevent/net/EventLoop.h"
 
-#include "../base/CurrentThread.h"
-#include "../base/Logger.h"
-#include "Channel.h"
-#include "EpollPoller.h"
-#include "PollPoller.h"
-#include "SelectPoller.h"
-#include "TimerManager.h"
-#include "WakeupChannel.h"
+#include "sevent/base/CurrentThread.h"
+#include "sevent/base/Logger.h"
+#include "sevent/net/Channel.h"
+#include "sevent/net/Poller.h"
+#include "sevent/net/TimerManager.h"
+#include "sevent/net/WakeupChannel.h"
 #include <assert.h>
 #include <vector>
 
@@ -19,14 +17,15 @@ thread_local EventLoop *EventLoop::threadEvLoop = nullptr;
 
 EventLoop::EventLoop(const std::string &name)
     : isTasking(false), isQuit(false), threadId(CurrentThread::gettid()),
-      poller(new EpollPoller), timerManager(new TimerManager(this)), 
-      wakeupChannel(new WakeupChannel(this)), loopName(name) {
+      timeout(pollTimeout), poller(Poller::newPoller()), 
+      wakeupChannel(new WakeupChannel(this)), 
+      timerManager(new TimerManager(this, wakeupChannel)), loopName(name) {
     if (!threadEvLoop)
         threadEvLoop = this;
     else
-        LOG_FATAL << "EventLoop - " << loopName
+        LOG_FATAL << "EventLoop - " << threadEvLoop->loopName
                   << " already exists in this thread " << threadId
-                  << ", create failed";
+                  << ", create" << loopName <<" failed";
 }
 
 EventLoop::~EventLoop() { 
@@ -39,7 +38,13 @@ void EventLoop::loop() {
     assertInOwnerThread();
     LOG_TRACE << "EventLoop::loop() - start looping, " << loopName << " = " << this;
     while (!isQuit) {
-        poller->poll(pollTimeout);
+        #ifdef _WIN32
+        timeout = timerManager->getNextTimeout();
+        #endif
+        poller->poll(timeout);
+        #ifdef _WIN32
+        timerManager->handleExpired();
+        #endif
         vector<Channel *> &activeChannels = poller->getActiveChannels();
         for (Channel *channel : activeChannels) {
             channel->handleEvent();
@@ -127,3 +132,5 @@ TimerId EventLoop::addTimer(int64_t millisecond, std::function<void()> cb, int64
 void EventLoop::cancelTimer(TimerId timerId) {
     timerManager->cancel(std::move(timerId));
 }
+
+const Timestamp EventLoop::getPollTime() const { return poller->getPollTime(); }

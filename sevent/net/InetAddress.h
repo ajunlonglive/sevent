@@ -1,7 +1,12 @@
 #ifndef SEVENT_NET_INETADDRESS_H
 #define SEVENT_NET_INETADDRESS_H
 
+#include "sevent/net/util.h"
+#ifndef _WIN32
 #include <netinet/in.h>
+#else
+#include <ws2tcpip.h>
+#endif
 #include <string>
 namespace sevent {
 namespace net {
@@ -29,9 +34,9 @@ public:
     std::string toStringIp() const;
     std::string toStringIpPort() const;
     uint16_t getPortHost() const;
-    sa_family_t family() const { return addr.sin_family; }
+    uint16_t family() const { return addr.sin_family; }
 
-    static bool resolve(const std::string& hostname, InetAddress *result);
+    static bool resolve(const std::string& hostname, InetAddress *iaddr);
 
 private:
     union {

@@ -1,16 +1,20 @@
-#include "Logger.h"
-#include "CurrentThread.h"
+#include "sevent/base/Logger.h"
+#include "sevent/base/CommonUtil.h"
+#include "sevent/base/CurrentThread.h"
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 #include <time.h>
+#ifdef _WIN32
+#include <winsock2.h>
+#endif
 
 using namespace sevent;
 using namespace std;
 
 //各线程缓存tid字符串
-thread_local std::string LogEvent::threadId = LogEvent::inittid();
+// thread_local std::string LogEvent::threadId = LogEvent::inittid();
 thread_local LogStream LogEvent::stream;
 
 namespace sevent {
@@ -24,10 +28,15 @@ void setUTCOffset(time_t gmtOffsetSecond) {
     sevent::g_gmtOffsetSec = gmtOffsetSecond;
 }
 
-const char *strerror_tl(int err) {
-    thread_local char errnoBuf[512];
-    return strerror_r(err, errnoBuf, sizeof(errnoBuf));
-}
+// const char *strerror_tl(int err) {
+//     thread_local char errnoBuf[512];
+//     #ifndef _WIN32
+//     return strerror_r(err, errnoBuf, sizeof(errnoBuf));
+//     #else
+//     strerror_s(errnoBuf, sizeof(errnoBuf), err);
+//     return errnoBuf;
+//     #endif
+// }
 
 } // namespace sevent
 
@@ -94,7 +103,7 @@ void DefaultLogProcessor::beforeMsgToStream(LogEvent &logEv) {
     //errno
     int errNumber = logEv.getErrno();
     if (errNumber) {
-        stream << strerror_tl(errNumber);
+        stream << CommonUtil::strerror_tl(errNumber);
         stream << "(errno=" << errNumber << ") ";
     }
 }
@@ -122,7 +131,7 @@ const char *DefaultLogProcessor::formatTime(Timestamp time) {
         struct tm tm_time;
         //默认(UTC+0);
         second += g_gmtOffsetSec;
-        gmtime_r(&second, &tm_time);
+        CommonUtil::gmtime_r(&second, &tm_time);
         //固定长度 17
         strftime(timeStrCache, sizeof(timeStrCache), "%Y%m%d %H:%M:%S",
                  &tm_time);
@@ -143,13 +152,24 @@ void DefaultLogProcessor::setShowMicroSecond(bool show) {
  *                          LogEvent
  * ******************************************************************/
 LogEvent::LogEvent(const char *file, int line, Logger::Level level,bool isErr)
-    : file(file), line(line), level(level),errNum(0), time(Timestamp::now()) {
+    : file(file), line(line), level(level),errNum(0), 
+      time(Timestamp::now()), threadId(CurrentThread::gettidString()) {
     //参考muduo 5.2章:GCC的strrchr()对于字符串字面量可以在编译期求值
+    #ifndef _WIN32
     const char *slash = strrchr(file, '/');
+    #else
+    const char *slash = strrchr(file, '\\');
+    #endif
     if (slash)
         this->file = slash + 1;
     if (isErr)
+    #ifndef _WIN32
         errNum = errno;
+    #else
+        errNum = h_errno; // WSAGetLastError()
+    #endif
+    // FIXME: 在windows下, thread_local LogStream::FixedBuffer好像会未初始化(cur指针为0)?
+    (void)stream;
     Logger::instance().msgBefore(*this);
 }
 LogEvent::~LogEvent() {
@@ -163,14 +183,14 @@ LogEvent::~LogEvent() {
     this->stream.reset();
 }
 
-std::string LogEvent::inittid() {
-    //缓存每个线程的tid字符串
-    char buf[32] = {0};
-    if (threadId.empty()) {
-        snprintf(buf, sizeof(buf), "%5d ", CurrentThread::gettid());
-    }
-    return buf;
-}
+// std::string LogEvent::inittid() {
+//     //缓存每个线程的tid字符串
+//     char buf[32] = {0};
+//     if (threadId.empty()) {
+//         snprintf(buf, sizeof(buf), "%5d ", CurrentThread::gettid());
+//     }
+//     return buf;
+// }
 
 /********************************************************************
  *                          LogAppender

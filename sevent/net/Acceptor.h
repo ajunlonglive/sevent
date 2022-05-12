@@ -1,8 +1,9 @@
 #ifndef SEVENT_NET_ACCEPTOR_H
 #define SEVENT_NET_ACCEPTOR_H
 
-#include "Channel.h"
-#include "InetAddress.h"
+#include "sevent/net/Channel.h"
+#include "sevent/net/InetAddress.h"
+#include "sevent/net/util.h"
 #include <functional>
 namespace sevent {
 namespace net {
@@ -11,7 +12,7 @@ class InetAddress;
 // socket/bind/listen/accept
 class Acceptor : public Channel {
 public:
-    using ConnectCallBack = std::function<void(int, const InetAddress &)>;
+    using ConnectCallBack = std::function<void(socket_t, const InetAddress &)>;
     Acceptor(EventLoop *loop, const InetAddress &addr, ConnectCallBack cb);
     ~Acceptor();
 
@@ -21,13 +22,13 @@ public:
 
 private:
     void handleRead() override;
-    int accept();
+    socket_t accept();
 
 private:
-    int idleFd;
+    socket_t idleFd;
     bool isListening;
     const InetAddress addr;
-    const std::function<void(int, const InetAddress &)> connectCallBack;
+    const std::function<void(socket_t, const InetAddress &)> connectCallBack;
 };
 
 } // namespace net

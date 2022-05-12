@@ -1,14 +1,31 @@
-#include "CurrentThread.h"
+#include "sevent/base/CurrentThread.h"
+#ifndef _WIN32
 #include <sys/syscall.h>
 #include <unistd.h>
+#else
+#include <processthreadsapi.h>
+#endif
+using namespace std;
 using namespace sevent;
 
-thread_local pid_t CurrentThread::tid = 0;
+thread_local int CurrentThread::tid = 0;
+thread_local std::string CurrentThread::tidString = "";
 
-pid_t CurrentThread::gettid() {
+int CurrentThread::gettid() {
     if (tid == 0) {
         //缓存tid
-        tid = static_cast<pid_t>(::syscall(SYS_gettid));
+        #ifndef _WIN32
+        tid = static_cast<int>(::syscall(SYS_gettid));
+        #else
+        tid = GetCurrentThreadId();
+        #endif
+        tidString = to_string(tid) + " ";
     }
     return tid;
+}
+const std::string &CurrentThread::gettidString() {
+    if (tidString.empty()) {
+        gettid();
+    }
+    return tidString;   
 }

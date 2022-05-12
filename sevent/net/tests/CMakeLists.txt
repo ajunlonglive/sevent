@@ -1,8 +1,29 @@
 add_executable(Buffer_test Buffer_test.cpp)
 target_link_libraries(Buffer_test sevent_net)
+
 add_executable(Channel_test Channel_test.cpp)
 target_link_libraries(Channel_test sevent_net)
+
 add_executable(InetAddress_test InetAddress_test.cpp)
 target_link_libraries(InetAddress_test sevent_net)
+
 add_executable(TimerQueue_test TimerQueue_test.cpp)
 target_link_libraries(TimerQueue_test sevent_net)
+
+add_executable(EcentLoop_test EcentLoop_test.cpp)
+target_link_libraries(EcentLoop_test sevent_net)
+
+add_executable(TcpClient_test1 TcpClient_test1.cpp)
+target_link_libraries(TcpClient_test1 sevent_net)
+
+add_executable(TcpClient_test2 TcpClient_test2.cpp)
+target_link_libraries(TcpClient_test2 sevent_net)
+
+add_executable(TcpClient_test3 TcpClient_test3.cpp)
+target_link_libraries(TcpClient_test3 sevent_net)
+
+add_executable(EchoClient_test EchoClient_test.cpp)
+target_link_libraries(EchoClient_test sevent_net)
+
+add_executable(EchoServer_test EchoServer_test.cpp)
+target_link_libraries(EchoServer_test sevent_net)

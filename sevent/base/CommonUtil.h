@@ -7,7 +7,12 @@ namespace sevent{
 
 namespace CommonUtil{
     std::string getHostname();
-    pid_t getPid();
+    int getPid();
+    struct tm *gmtime_r(const time_t *timep, struct tm *result);
+    size_t fwrite_unlocked(const void *ptr, size_t size, size_t n, FILE *stream);
+    // for windows
+    void chomp(char *s);
+    const char *strerror_tl(int errnum);
 
 } // namespace CommonUtil
 } // namespace sevent

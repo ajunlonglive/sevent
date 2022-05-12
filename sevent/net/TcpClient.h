@@ -1,7 +1,8 @@
 #ifndef SEVENT_NET_TCPCLIENT_H
 #define SEVENT_NET_TCPCLIENT_H
 
-#include "../base/noncopyable.h"
+#include "sevent/base/noncopyable.h"
+#include "sevent/net/InetAddress.h"
 #include <stdint.h>
 #include <atomic>
 #include <functional>

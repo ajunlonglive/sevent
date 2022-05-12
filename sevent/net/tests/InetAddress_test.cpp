@@ -1,5 +1,5 @@
-#include "../InetAddress.h"
-#include "../../base/Logger.h"
+#include "sevent/net/InetAddress.h"
+#include "sevent/base/Logger.h"
 #include "myassert.h"
 #include <iostream>
 #include <stdio.h>
@@ -40,9 +40,18 @@ void testInetAddressResolve() {
     LOG_ERROR << "Unable to resolve baidu.com";
   }
 }
-
 int main() {
+#ifdef _WIN32
+    WSADATA wsaData;
+    WSAStartup(MAKEWORD(2, 2), &wsaData);
+#endif
+
     testInetAddress();
     testInetAddressResolve();
+    cout << "finish InetAddress_test" << endl;
+
+#ifdef _WIN32
+WSACleanup();
+#endif
     return 0;
 }

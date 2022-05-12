@@ -1,9 +1,9 @@
 #ifndef SEVENT_BASE_COUNTDOWNLATCH_H
 #define SEVENT_BASE_COUNTDOWNLATCH_H
 
+#include "sevent/base/noncopyable.h"
 #include <mutex>
 #include <condition_variable>
-#include "noncopyable.h"
 
 namespace sevent{
 

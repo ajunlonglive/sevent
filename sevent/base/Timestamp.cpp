@@ -1,20 +1,32 @@
-#include "Timestamp.h"
+#include "sevent/base/Timestamp.h"
+#include "sevent/base/CommonUtil.h"
+#ifndef _WIN32
 #include <sys/time.h>
+#else
+#include<time.h>
+#include<chrono>
+using namespace std::chrono;
+#endif
 
 using namespace sevent;
 using namespace std;
 
 Timestamp Timestamp::now(){
+    #ifndef _WIN32
     timeval tv;
     gettimeofday(&tv, nullptr);
     return Timestamp(tv.tv_sec * 1000000ul + tv.tv_usec);    
+    #else
+    time_point<system_clock> t = system_clock::now();
+    return Timestamp(duration_cast<microseconds>(t.time_since_epoch()).count());
+    #endif
 }
 
 string Timestamp::toString() {
     char buf[64] = {0};
     time_t seconds = static_cast<time_t>(microSecond / microSecondUnit);
     struct tm tm_time;
-    gmtime_r(&seconds, &tm_time);
+    CommonUtil::gmtime_r(&seconds, &tm_time);
     strftime(buf, sizeof(buf), "%Y%m%d %H:%M:%S", &tm_time);
     return buf;
 }

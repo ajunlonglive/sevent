@@ -3,14 +3,17 @@
 
 
 #include <thread>
+#include <string>
 namespace sevent {
 
 class CurrentThread {
 public:
-    static pid_t gettid();
+    static int gettid();
+    static const std::string &gettidString();
 
 private:
-    thread_local static pid_t tid;
+    thread_local static int tid;
+    thread_local static std::string tidString;
 };
 
 } // namespace sevent

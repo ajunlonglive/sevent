@@ -1,15 +1,17 @@
 #ifndef SEVENT_NET_TCPSERVER_H
 #define SEVENT_NET_TCPSERVER_H
 
-#include "../base/noncopyable.h"
-#include "TcpConnectionHolder.h"
+#include "sevent/base/noncopyable.h"
+#include "sevent/net/InetAddress.h"
+#include "sevent/net/TcpConnectionHolder.h"
+#include "sevent/net/util.h"
 #include <atomic>
 #include <functional>
 #include <memory>
+#include <stdint.h>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <stdint.h>
 namespace sevent {
 namespace net {
 class Acceptor;
@@ -41,7 +43,7 @@ public:
 
 private:
     Acceptor *createAccepptor(EventLoop *loop, const InetAddress &listenAddr);
-    void onConnection(int sockfd, const InetAddress &addr);
+    void onConnection(socket_t sockfd, const InetAddress &addr);
     // for TcpConnection::handleClose
     void removeConnection(int64_t id) override;
     void removeConnectionInLoop(int64_t id);

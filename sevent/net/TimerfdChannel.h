@@ -1,8 +1,8 @@
 #ifndef SEVENT_NET_TIMERFDCHANNEL_H
 #define SEVENT_NET_TIMERFDCHANNEL_H
-
-#include "../base/Timestamp.h"
-#include "Channel.h"
+#ifndef _WIN32
+#include "sevent/base/Timestamp.h"
+#include "sevent/net/Channel.h"
 #include <functional>
 
 namespace sevent {
@@ -16,7 +16,7 @@ public:
     void resetExpired(Timestamp expired);
 private:
     void handleRead() override;
-    int createTimerfd();
+    socket_t createTimerfd();
 private:
     const std::function<void()> readCallBack;
 };
@@ -25,4 +25,5 @@ private:
 } // namespace net
 } // namespace sevent
 
+#endif
 #endif

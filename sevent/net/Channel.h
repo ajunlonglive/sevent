@@ -1,7 +1,8 @@
 #ifndef SEVENT_NET_CHANNEL_H
 #define SEVENT_NET_CHANNEL_H
 
-#include "../base/noncopyable.h"
+#include "sevent/base/noncopyable.h"
+#include "sevent/net/util.h"
 
 namespace sevent {
 namespace net {
@@ -9,7 +10,7 @@ class EventLoop;
 // Channel 是fd的抽象,EventLoop通过Poller间接管理Channel
 class Channel : noncopyable {
 public:
-    Channel(int fd, EventLoop *loop);
+    Channel(socket_t fd, EventLoop *loop);
 
     void handleEvent();
     void setRevents(int revt) { revents = revt; }
@@ -24,7 +25,7 @@ public:
     // 移出监听事件列表和channelMap(Poller)
     void remove();
 
-    int getFd() const { return fd; }
+    socket_t getFd() const { return fd; }
     int getEvents() const { return events; }
     EventLoop *getOwnerLoop() { return ownerLoop; }
 
@@ -42,11 +43,11 @@ protected:
     virtual void handleClose() {}
     virtual void handleError() {}
 
-    void setFd(int sockfd);
-    void setFdUnSafe(int sockfd) { fd = sockfd; }
+    void setFd(socket_t sockfd);
+    void setFdUnSafe(socket_t sockfd) { fd = sockfd; }
 
 protected:
-    int fd;
+    socket_t fd;
     int events;
     int revents;
     int index;  //PollPoller::pollfdList[index] //EpollPoller,status

@@ -1,8 +1,10 @@
 #ifndef SEVENT_NET_SELECTPOLLER_H
 #define SEVENT_NET_SELECTPOLLER_H
 
-#include "Poller.h"
-
+#include "sevent/net/Poller.h"
+#ifdef _WIN32
+#include <winsock2.h>
+#endif
 
 namespace sevent {
 namespace net {

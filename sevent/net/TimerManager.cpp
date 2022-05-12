@@ -1,22 +1,31 @@
-#include "TimerManager.h"
+#include "sevent/net/TimerManager.h"
 
-#include "../base/Logger.h"
-#include "EventLoop.h"
-#include "SocketsOps.h"
-#include "TimerfdChannel.h"
+#include "sevent/base/Logger.h"
+#include "sevent/net/EventLoop.h"
+#include "sevent/net/SocketsOps.h"
+#include "sevent/net/TimerfdChannel.h"
+#include "sevent/net/WakeupChannel.h"
 #include <assert.h>
+#include <iterator>
 
 using namespace std;
 using namespace sevent;
 using namespace sevent::net;
 
-TimerManager::TimerManager(EventLoop *loop)
+#ifndef _WIN32
+TimerManager::TimerManager(EventLoop *loop, std::unique_ptr<WakeupChannel> &channel)
     : ownerLoop(loop), timerfdChannel(createChannel()) {}
-TimerManager::~TimerManager() {}
-
+    
 TimerfdChannel *TimerManager::createChannel() {
     return new TimerfdChannel(ownerLoop,std::bind(&TimerManager::handleExpired, this));
-}
+}    
+#else
+TimerManager::TimerManager(EventLoop *loop, std::unique_ptr<WakeupChannel> &channel)
+    : ownerLoop(loop), wakeupChannel(channel) {}
+#endif
+TimerManager::~TimerManager() {}
+
+
 
 TimerId TimerManager::addTimer(std::function<void()> cb, Timestamp expired, int64_t interval) {
     Timer::ptr timer(new Timer(std::move(cb), expired, interval));
@@ -28,8 +37,13 @@ TimerId TimerManager::addTimer(std::function<void()> cb, Timestamp expired, int6
 void TimerManager::addTimerInLoop(Timer::ptr &timer) {
     ownerLoop->assertInOwnerThread();
     bool isChanged = insert(timer);
-    if (isChanged)
+    if (isChanged) {
+        #ifndef _WIN32
         timerfdChannel->resetExpired(timer->getExpired());
+        #else
+        wakeupChannel->wakeup();
+        #endif
+    }
 }
 
 void TimerManager::cancel(TimerId timerId) {
@@ -77,7 +91,11 @@ void TimerManager::resetTimers(vector<Timer::ptr> &list, Timestamp now) {
         }
     }
     if (!timers.empty()) {
+        #ifndef _WIN32
         timerfdChannel->resetExpired((*timers.begin())->getExpired());
+        #else
+        wakeupChannel->wakeup();
+        #endif
     }
 }
 
@@ -91,4 +109,15 @@ bool TimerManager::insert(Timer::ptr &timer) {
     assert(res.second);
     (void)res;
     return isChanged;
+}
+
+int TimerManager::getNextTimeout() {
+    if (timers.empty())
+        return EventLoop::pollTimeout;
+    Timestamp next = (*timers.begin())->getExpired();
+    Timestamp now = Timestamp::now();
+    if (next <= now)
+        return 0;
+    else
+        return static_cast<int>((next.getMicroSecond() - now.getMicroSecond()) / 1000);
 }

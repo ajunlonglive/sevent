@@ -1,11 +1,12 @@
 #ifndef SEVENT_NET_TCPHANDLER_H
 #define SEVENT_NET_TCPHANDLER_H
 
-#include "TcpConnection.h"
+#include "sevent/net/TcpConnection.h"
 namespace sevent {
 namespace net {
 class TcpHandler {
 public:
+    // TODO 简化, TcpServer和Client可以包含这
     // for override
     virtual void onConnection(const TcpConnection::ptr &conn) {}
     virtual void onMessage(const TcpConnection::ptr &conn, Buffer &buf) {}

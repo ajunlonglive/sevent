@@ -1,8 +1,8 @@
 #ifndef SEVENT_NET_EVENTLOOPTHREAD_H
 #define SEVENT_NET_EVENTLOOPTHREAD_H
 
-#include "../base/CountDownLatch.h"
-#include "../base/noncopyable.h"
+#include "sevent/base/CountDownLatch.h"
+#include "sevent/base/noncopyable.h"
 #include <atomic>
 #include <functional>
 #include <string>

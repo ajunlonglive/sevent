@@ -1,7 +1,7 @@
-#include "TimerfdChannel.h"
-
-#include "../base/Logger.h"
-#include "SocketsOps.h"
+#include "sevent/net/TimerfdChannel.h"
+#ifndef _WIN32
+#include "sevent/base/Logger.h"
+#include "sevent/net/SocketsOps.h"
 #include <sys/timerfd.h>
 using namespace std;
 using namespace sevent;
@@ -17,8 +17,8 @@ TimerfdChannel::~TimerfdChannel() {
     sockets::close(fd);
 }
 
-int TimerfdChannel::createTimerfd() {
-    int fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
+socket_t TimerfdChannel::createTimerfd() {
+    socket_t fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
     if (fd < 0)
         LOG_SYSFATAL << "timerfd_create() failed";
     return fd;
@@ -50,3 +50,4 @@ void TimerfdChannel::handleRead() {
     if (readCallBack)
         readCallBack();
 }
+#endif

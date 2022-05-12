@@ -1,5 +1,5 @@
 #include <iostream>
-#include "../base/Logger.h"
+#include "sevent/base/Logger.h"
 #include <memory>
 #include <string>
 #include <stdio.h>
@@ -16,7 +16,6 @@ void bench(const char* type)
     g_total = 0;
 
     int n = 1000 * 1000;
-    // int n = 5;
     const bool kLongLog = false;
     string empty = " ";
     string longStr(3000, 'X');
@@ -50,15 +49,19 @@ public:
 
 int main() {
     DefaultLogProcessor::setShowMicroSecond(true);
-    // SEVENT::setUTCOffset(8 * 3600);
+    sevent::setUTCOffset(8 * 3600);
     unique_ptr<LogAppender> p(new MyAppender);
     Logger &logger = Logger::instance();
     logger.setLogAppender(p);
 
     char buffer[64*1024];
+    #ifdef _WIN32
+    // g_file = fopen("nul", "w");
+    g_file = fopen("./log.txt", "w");
+    #else
     g_file = fopen("/dev/null", "w");
-    // g_file = fopen("./log.txt", "w");
-    setbuffer(g_file, buffer, sizeof buffer);
+    #endif
+    setvbuf(g_file, buffer, _IOFBF, sizeof buffer);
     bench("/dev/null");
     fclose(g_file);
 

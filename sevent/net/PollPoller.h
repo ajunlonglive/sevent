@@ -1,7 +1,7 @@
 #ifndef SEVENT_NET_POLLPOLLER_H
 #define SEVENT_NET_POLLPOLLER_H
-
-#include "Poller.h"
+#ifndef _WIN32
+#include "sevent/net/Poller.h"
 
 struct pollfd;
 
@@ -33,4 +33,5 @@ private:
 } // namespace net
 } // namespace sevent
 
+#endif
 #endif

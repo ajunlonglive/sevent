@@ -17,6 +17,7 @@ public:
 
     bool operator<(Timestamp other) { return microSecond < other.microSecond; }
     bool operator==(Timestamp other) { return microSecond == other.microSecond; }
+    bool operator<=(Timestamp other) { return microSecond <= other.microSecond; }
 
     static double timeDifference(Timestamp high, Timestamp low);
     static Timestamp addTime(Timestamp t, int64_t millisecond);

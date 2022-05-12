@@ -1,6 +1,7 @@
 #ifndef SEVENT_NET_BUFFER_H
 #define SEVENT_NET_BUFFER_H
 
+#include "sevent/net/util.h"
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -59,8 +60,8 @@ public:
     void prependInt16(int16_t n);
     void prependInt8(int8_t n);
 
-    ssize_t readFd(int fd);
-    ssize_t writeFd(int fd);
+    ssize_t readFd(socket_t fd);
+    ssize_t writeFd(socket_t fd);
 
     char *writePos() { return begin() + writeIndex; }
     const char *readPos() const { return begin() + readIndex; }

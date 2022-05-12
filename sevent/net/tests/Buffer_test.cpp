@@ -1,23 +1,10 @@
-#include "../Buffer.h"
+#include "sevent/net/Buffer.h"
 #include "myassert.h"
 #include <iostream>
 #include <string.h>
 
 using namespace std;
 using namespace sevent::net;
-
-#define myassert(expr)                                                         \
-    (static_cast<bool>(expr) ? void(0)                                         \
-                             : myassertf(#expr, __FILE__, __func__, __LINE__))
-
-void myassertf(const char *expr, const char *file, const char *func, int line) {
-    const char *slash = strrchr(file, '/');
-    if (slash)
-        file = slash + 1;
-    cout << file << ":" << line << ": " << func << ": Assertion `" << expr
-         << "` failed" << endl;
-    abort();
-}
 
 void testAppendAndRead() {
     Buffer buf;
@@ -164,5 +151,6 @@ int main() {
     testPrepend();
     testReadInt();
     testEOL();
+    cout << "finish Buffer_test" << endl;
     return 0;
 }

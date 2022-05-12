@@ -1,9 +1,9 @@
 #ifndef SEVENT_BASE_LOGGER_H
 #define SEVENT_BASE_LOGGER_H
 
-#include "LogStream.h"
-#include "Timestamp.h"
-#include "noncopyable.h"
+#include "sevent/base/LogStream.h"
+#include "sevent/base/noncopyable.h"
+#include "sevent/base/Timestamp.h"
 #include <memory>
 #include <string>
 #include <thread>
@@ -16,12 +16,12 @@ class LogAppender;
 extern time_t g_gmtOffsetSec;
 //默认UTC+0,只影响格式化时间;例如 中国标准时间=UTC+8 setUTCOffset(8*3600)
 void setUTCOffset(time_t gmtOffsetSecond);
-const char *strerror_tl(int err);
+// const char *strerror_tl(int err);
 
 //日志
 class Logger : noncopyable {
 public:
-    enum Level { TRACE, DEBUG, INFO, WARN, ERROR, FATAL, LEVEL_SIZE };
+    enum Level { TRACE, DEBUG, INFO, WARN, ERROR_, FATAL, LEVEL_SIZE };
     static Logger &instance(); //单例
     void append(const char *data, int len);
     void flush();
@@ -94,7 +94,7 @@ private:
     Logger::Level level;
     int errNum;
     Timestamp time;
-    thread_local static std::string threadId;
+    const std::string &threadId;
     thread_local static LogStream stream; //用于存放log字符串
 };
 
@@ -120,11 +120,11 @@ public:
     if (sevent::Logger::instance().getLogLevel() <= sevent::Logger::WARN)  \
     sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::WARN).getStream()
 #define LOG_ERROR                                                              \
-    sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::ERROR).getStream()
+    sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::ERROR_).getStream()
 #define LOG_FATAL                                                              \
     sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::FATAL).getStream()
 #define LOG_SYSERR                                                             \
-    sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::ERROR,true).getStream()
+    sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::ERROR_,true).getStream()
 #define LOG_SYSFATAL                                                             \
     sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::FATAL,true).getStream()
 } // namespace sevent

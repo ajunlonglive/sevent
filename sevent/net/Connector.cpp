@@ -1,8 +1,10 @@
-#include "Connector.h"
-#include "../base/Logger.h"
-#include "EventLoop.h"
-#include "SocketsOps.h"
-#include "TcpConnection.h"
+#include "sevent/net/Connector.h"
+
+#include "sevent/base/CommonUtil.h"
+#include "sevent/base/Logger.h"
+#include "sevent/net/EventLoop.h"
+#include "sevent/net/SocketsOps.h"
+#include "sevent/net/TcpConnection.h"
 #include <errno.h>
 
 using namespace std;
@@ -34,27 +36,42 @@ void Connector::connect() {
 void Connector::doconnect() {
     ownerLoop->assertInOwnerThread();
     if (!isStop) {
-        int sockfd = sockets::createNBlockfd(serverAddr.family());
+        socket_t sockfd = sockets::createNBlockfd(serverAddr.family());
         Channel::setFdUnSafe(sockfd);
         int ret =
             sockets::connect(fd, serverAddr.getSockAddr(), sockets::addr6len);
-        int err = (ret == 0 ? 0 : errno);
+        int err = (ret == 0 ? 0 : sockets::getErrno());
         switch (err) {
         case 0:
+        #ifndef _WIN32
         case EINPROGRESS:
         case EINTR:
         case EISCONN:
+        #else
+        case WSAEINPROGRESS:
+        case WSAEINTR:
+        case WSAEISCONN:
+        #endif
             LOG_TRACE << "Connector::doconnect() - doconnecting()";
             doconnecting();
             break;
+        #ifndef _WIN32
         case EAGAIN:
         case EADDRINUSE:
         case EADDRNOTAVAIL:
         case ECONNREFUSED:
         case ENETUNREACH:
+        #else
+        case WSAEWOULDBLOCK:
+        case WSAEADDRINUSE:
+        case WSAEADDRNOTAVAIL:
+        case WSAECONNREFUSED:
+        case WSAENETUNREACH:
+        #endif
             LOG_TRACE << "Connector::doconnect() - retry()";
             retry();
             break;
+        #ifndef _WIN32
         case EACCES:
         case EPERM:
         case EAFNOSUPPORT:
@@ -62,6 +79,14 @@ void Connector::doconnect() {
         case EBADF:
         case EFAULT:
         case ENOTSOCK:
+        #else
+        case WSAEACCES:
+        case WSAEAFNOSUPPORT:
+        case WSAEALREADY:
+        case WSAEBADF:
+        case WSAEFAULT:
+        case WSAENOTSOCK:
+        #endif
             LOG_SYSERR << "Connector::doconnect() - failed, errno = " << err;
             sockets::close(sockfd);
             setState(disconnected);
@@ -167,7 +192,7 @@ void Connector::handleWrite() {
         int err = sockets::getSocketError(fd);
         if (err) {
             LOG_WARN << "Connector::handleWrite() - SO_ERROR = " << err << " "
-                     << strerror_tl(err);
+                     << CommonUtil::strerror_tl(err);
             retry();
         } else if (sockets::isSelfConnect(fd)) {
             LOG_WARN << "Connector::handleWrite() - self connect";
@@ -192,7 +217,7 @@ void Connector::handleError() {
         int err = sockets::getSocketError(fd);
         LOG_ERROR << "Connector::handleError(),  fd = " << fd
                   << ", state = " << stateArr[state] << ", SO_ERROR = " << err
-                  << " " << strerror_tl(err);
+                  << " " << CommonUtil::strerror_tl(err);
         retry();
     } else {
         LOG_TRACE << "Connector::handleError() - do nothing, state = "

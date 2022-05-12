@@ -1,7 +1,10 @@
-#include<iostream>
-#include<string.h>
-#include "../EventLoop.h"
-#include "../../base/Timestamp.h"
+#include <iostream>
+#include <string.h>
+#include "sevent/net/EventLoop.h"
+#include "sevent/base/Timestamp.h"
+#ifdef _WIN32
+#include <winsock2.h>
+#endif
 
 using namespace std;
 using namespace sevent;
@@ -17,7 +20,12 @@ void timeout(const char  *msg){
     }
 }
 
+
 int main(){
+#ifdef _WIN32
+    WSADATA wsaData;
+    WSAStartup(MAKEWORD(2, 2), &wsaData);
+#endif
     EventLoop loop;
     g_loop = &loop;
     //2 3 1 1.5 2.5 3 3.5 3 3 3
@@ -33,8 +41,7 @@ int main(){
     loop.addTimer(3500, [] { timeout("once 3.5"); });
     loop.addTimer(0, [] { timeout("every 3"); }, 3000);
 
-
     loop.loop();
-
+    cout << "finish TimerQueue_test" << endl;
     return 0;
 }
