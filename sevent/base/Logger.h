@@ -27,8 +27,7 @@ public:
     void flush();
     void msgBefore(LogEvent &logEv);
     void msgAfter(LogEvent &logEv);
-    void log(const char *file, int line, Logger::Level level,
-             const std::string &msg);
+    void log(const char *file, int line, Logger::Level level, const std::string &msg); // TEST
     void setLogLevel(Level level) { this->level = level; }
     Level getLogLevel() { return this->level; }
     void setLogEventProcessor(std::unique_ptr<LogEventProcessor> &processor);
@@ -83,6 +82,7 @@ public:
     int getLine() { return this->line; }
     int getErrno() { return this->errNum; }
     LogStream &getStream() { return this->stream; }
+    LogStream &initStream(); // msgBefore
 
 private:
     static std::string inittid();
@@ -109,24 +109,25 @@ public:
 
 #define LOG_TRACE                                                              \
     if (sevent::Logger::instance().getLogLevel() <= sevent::Logger::TRACE)     \
-    sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::TRACE).getStream()
+    sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::TRACE).initStream()
 #define LOG_DEBUG                                                              \
     if (sevent::Logger::instance().getLogLevel() <= sevent::Logger::DEBUG)     \
-    sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::DEBUG).getStream()
+    sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::DEBUG).initStream()
 #define LOG_INFO                                                               \
     if (sevent::Logger::instance().getLogLevel() <= sevent::Logger::INFO)      \
-    sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::INFO).getStream()
+    sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::INFO).initStream()
 #define LOG_WARN                                                               \
     if (sevent::Logger::instance().getLogLevel() <= sevent::Logger::WARN)  \
-    sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::WARN).getStream()
+    sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::WARN).initStream()
 #define LOG_ERROR                                                              \
-    sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::ERROR_).getStream()
+    if (sevent::Logger::instance().getLogLevel() <= sevent::Logger::ERROR_)  \
+    sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::ERROR_).initStream()
 #define LOG_FATAL                                                              \
-    sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::FATAL).getStream()
+    sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::FATAL).initStream()
 #define LOG_SYSERR                                                             \
-    sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::ERROR_,true).getStream()
+    sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::ERROR_,true).initStream()
 #define LOG_SYSFATAL                                                             \
-    sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::FATAL,true).getStream()
+    sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::FATAL,true).initStream()
 } // namespace sevent
 
 #endif

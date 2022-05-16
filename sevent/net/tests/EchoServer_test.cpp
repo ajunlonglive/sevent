@@ -44,7 +44,7 @@ int main(){
     MyHandler handler; // Handler的生命周期应该跟EventLoop/TcpServer一样长(由用户管理)
     server.setTcpHandler(&handler); 
 
-    server.start();
+    server.listen();
     loop.loop();
 
     return 0;

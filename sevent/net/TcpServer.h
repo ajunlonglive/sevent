@@ -28,10 +28,11 @@ public:
     ~TcpServer();
 
     // 创建worker线程/listen/accept,线程安全
-    void start();
+    void listen();
     void setTcpHandler(TcpHandler *handler) { tcpHandler = handler; }
+    // 设置监听socket选项
     // linux对监听socket设置的部分选项, accept返回的socket将自动继承
-    int setSockOpt(int level, int optname, const int *optval); 
+    int setSockOpt(int level, int optname, const void *optval, socklen_t optlen); 
 
     // EventLoopWorker线程初始化时,loop()执行前的回调
     void setWorkerInitCallback(const std::function<void(EventLoop *)> &cb);
@@ -53,7 +54,7 @@ private:
     int64_t nextId;
     std::atomic<bool> started;
     std::unique_ptr<Acceptor> acceptor;
-    std::unique_ptr<EventLoopWorkers> workers;
+    std::unique_ptr<EventLoopWorkers> workers; // 每个TcpServer独自创建workers, workerloop不共享
     std::function<void(EventLoop *)> initCallBack;
     std::unordered_map<int64_t, std::shared_ptr<TcpConnection>> connections; 
     // TODO 单纯保存数据, 单调递增, map:id+string?

@@ -8,6 +8,7 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <signal.h>
+#include <sys/sendfile.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
 #include <unistd.h>
@@ -50,19 +51,27 @@ void sockets::setErrno(int err) {
     #endif
 }
 
-ssize_t sockets::read(socket_t fd, void *buf, size_t count) {
+ssize_t sockets::read(socket_t sockfd, void *buf, size_t count) {
     #ifndef _WIN32
-    return ::read(fd, buf, count);
+    return ::read(sockfd, buf, count);
     #else
-    return ::recv(fd, reinterpret_cast<char*>(buf), static_cast<int>(count), 0);
+    return ::recv(sockfd, reinterpret_cast<char*>(buf), static_cast<int>(count), 0);
     #endif
 }
 
-ssize_t sockets::write(socket_t fd, const void *buf, size_t count){
+ssize_t sockets::write(socket_t sockfd, const void *buf, size_t count) {
     #ifndef _WIN32
-    return ::write(fd, buf, count);
+    return ::write(sockfd, buf, count);
     #else
-    return ::send(fd, reinterpret_cast<const char*>(buf), static_cast<int>(count), 0);
+    return ::send(sockfd, reinterpret_cast<const char*>(buf), static_cast<int>(count), 0);
+    #endif
+}
+ssize_t sockets::sendfile(int out_fd, int in_fd, off_t *offset, size_t count) {
+    #ifndef _WIN32
+    return ::sendfile(out_fd, in_fd, offset, count);
+    #else
+    // return ::send(sockfd, reinterpret_cast<const char*>(buf), static_cast<int>(count), 0);
+    return 0; // TODO
     #endif
 }
 socket_t sockets::open(const char *pathname, int flags) {
@@ -75,14 +84,14 @@ socket_t sockets::open(const char *pathname, int flags) {
     return -1;
     #endif
 }
-int sockets::close(socket_t fd) {
+int sockets::close(socket_t sockfd) {
     #ifndef _WIN32
-    int ret = ::close(fd);
+    int ret = ::close(sockfd);
     #else
-    int ret = ::closesocket(fd);
+    int ret = ::closesocket(sockfd);
     #endif    
     if (ret < 0)
-        LOG_SYSERR << "sockets::close() failed, fd = "<< fd;
+        LOG_SYSERR << "sockets::close() failed, fd = "<< sockfd;
     return ret;
 
 }
@@ -97,7 +106,7 @@ int sockets::shutdown(socket_t sockfd, int how) {
 socket_t sockets::socket(int domain, int type, int protocol) {
     socket_t fd = ::socket(domain, type, protocol);
     if (fd < 0)
-        LOG_SYSFATAL << "sockets::socket() failed";
+        LOG_SYSERR << "sockets::socket() failed";
     return fd;
 }
 int sockets::bind(socket_t sockfd, const struct sockaddr *addr, socklen_t addrlen) {
@@ -147,26 +156,28 @@ const char *sockets::inet_ntop(int af, const void *src, char *dst, socklen_t siz
 int sockets::setsockopt(socket_t sockfd, int level, int optname, const void *optval, socklen_t optlen) {
     int ret = ::setsockopt(sockfd, level, optname, reinterpret_cast<const char *>(optval), optlen);
     if (ret < 0)
-        LOG_SYSERR << "sockets::setsockopt() failed";
-    return ret;    
+        LOG_SYSERR << "sockets::setsockopt() failed, fd = " << sockfd
+                   << " ,level = " << level << " ,optname = " << optname;
+    return ret;
 }
 int sockets::getsockopt(socket_t sockfd, int level, int optname, void *optval, socklen_t *optlen) {
     int ret = ::getsockopt(sockfd, level, optname, reinterpret_cast<char *>(optval), optlen);
     if (ret < 0)
-        LOG_SYSERR << "sockets::getsockopt() failed";
+        LOG_SYSERR << "sockets::getsockopt() failed, fd = " << sockfd
+                   << " ,level = " << level << " ,optname = " << optname;
     return ret;       
 
 }
 int sockets::getsockname(socket_t sockfd, struct sockaddr *addr, socklen_t *addrlen) {
     int ret = ::getsockname(sockfd, addr, addrlen);
     if (ret < 0)
-        LOG_SYSERR << "sockets::getsockname() failed";
+        LOG_SYSERR << "sockets::getsockname() failed, fd = " << sockfd;
     return ret;    
 }
 int sockets::getpeername(socket_t sockfd, struct sockaddr *addr, socklen_t *addrlen) {
     int ret = ::getpeername(sockfd, addr, addrlen);
     if (ret < 0)
-        LOG_SYSERR << "sockets::getpeername() failed";
+        LOG_SYSERR << "sockets::getpeername() failed, fd = " << sockfd;
     return ret;    
 }
 
@@ -269,10 +280,14 @@ socket_t sockets::doaccept(socket_t sockfd, struct sockaddr *addr, socklen_t *ad
 
 int sockets::getSocketError(socket_t sockfd) {
     int optval;
-    socklen_t optlen = static_cast<socklen_t>(sizeof optval);
+    socklen_t optlen = static_cast<socklen_t>(sizeof(optval));
     int ret = sockets::getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &optval, &optlen);
     if (ret < 0)
+        #ifndef _WIN32
         return errno;
+        #else
+        return h_errno;
+        #endif
     return optval;
 }
 

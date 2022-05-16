@@ -30,7 +30,7 @@ public:
     void setInterval(int interval);
     void setLimit(int limit);
     void setLogFile(std::unique_ptr<LogFile> &file);
-    ~LogAsynAppender();
+    virtual ~LogAsynAppender();
 
 private:
     static const int largeBufferSize = 4000 * 1000; // 4MB
@@ -60,8 +60,8 @@ public:
     void writeInternal(const char *log, int len);
     void flush();
     void rollFile();
-    std::string getLogFileName(time_t now);
-    ~LogFile();
+    virtual std::string getLogFileName(time_t now); // 生成文件的名字
+    virtual ~LogFile();
 
 private:
     const std::string basename;

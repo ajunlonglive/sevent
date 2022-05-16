@@ -24,8 +24,7 @@ FILE *g_file;
 void bench(bool longLog)
 {
   int cnt = 0;
-  // const int kBatch = 1000;
-  const int kBatch = 10;
+  const int kBatch = 1000;
   string empty = " ";
   string longStr(3000, 'X');
   longStr += " ";

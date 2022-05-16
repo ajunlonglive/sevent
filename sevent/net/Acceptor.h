@@ -12,6 +12,7 @@ class InetAddress;
 // socket/bind/listen/accept
 class Acceptor : public Channel {
 public:
+    // callBack = TcpServer::onConnection
     using ConnectCallBack = std::function<void(socket_t, const InetAddress &)>;
     Acceptor(EventLoop *loop, const InetAddress &addr, ConnectCallBack cb);
     ~Acceptor();

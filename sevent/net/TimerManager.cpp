@@ -76,7 +76,7 @@ std::vector<Timer::ptr> TimerManager::getExpired(Timestamp now) {
     vector<Timer::ptr> expiredList;
     //>=
     TimerSet::iterator it = timers.lower_bound(tp);
-    assert(it == timers.end() || now < (*it)->getExpired());
+    assert(it == timers.end() || now <= (*it)->getExpired());
     std::copy(timers.begin(), it, back_inserter(expiredList));
     // expiredList.insert(expiredList.begin(), timers.begin(), it);
     timers.erase(timers.begin(), it);

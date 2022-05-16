@@ -44,15 +44,20 @@ void Connector::doconnect() {
         switch (err) {
         case 0:
         #ifndef _WIN32
-        case EINPROGRESS:
+        // Linux sockfd is nonblocking and cannot be completed immediately, EINPROGRESS
+        // Unix failed with EAGAIN instead
+        // Windows WSAEWOULDBLOCK
+        case EINPROGRESS: 
         case EINTR:
         case EISCONN:
         #else
+        case WSAEWOULDBLOCK:
         case WSAEINPROGRESS:
         case WSAEINTR:
         case WSAEISCONN:
         #endif
-            LOG_TRACE << "Connector::doconnect() - doconnecting()";
+            LOG_TRACE << "Connector::doconnect() - doconnecting() - "
+                      << CommonUtil::strerror_tl(err) << " errno = " << err;
             doconnecting();
             break;
         #ifndef _WIN32
@@ -61,14 +66,14 @@ void Connector::doconnect() {
         case EADDRNOTAVAIL:
         case ECONNREFUSED:
         case ENETUNREACH:
-        #else
-        case WSAEWOULDBLOCK:
+        #else        
         case WSAEADDRINUSE:
         case WSAEADDRNOTAVAIL:
         case WSAECONNREFUSED:
         case WSAENETUNREACH:
         #endif
-            LOG_TRACE << "Connector::doconnect() - retry()";
+            LOG_TRACE << "Connector::doconnect() - retry() - "
+                      << CommonUtil::strerror_tl(err) << " errno = " << err;
             retry();
             break;
         #ifndef _WIN32
@@ -87,12 +92,12 @@ void Connector::doconnect() {
         case WSAEFAULT:
         case WSAENOTSOCK:
         #endif
-            LOG_SYSERR << "Connector::doconnect() - failed, errno = " << err;
+            LOG_SYSERR << "Connector::doconnect() - failed";
             sockets::close(sockfd);
             setState(disconnected);
             break;
         default:
-            LOG_SYSERR << "Connector::doconnect() - unexpected failed, errno = " << err;
+            LOG_SYSERR << "Connector::doconnect() - unexpected failed";
             sockets::close(sockfd);
             setState(disconnected);
             break;

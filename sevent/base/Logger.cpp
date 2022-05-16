@@ -50,7 +50,7 @@ Logger::Logger(Level level, Processor_ptr &&processor, Output_ptr &&output)
 }
 //构造默认实例
 Logger &Logger::instance() {
-    static Logger logger(Level::TRACE,
+    static Logger logger(Logger::initLevel(),
                          unique_ptr<LogEventProcessor>(new DefaultLogProcessor),
                          unique_ptr<LogAppender>(new LogAppender));
     return logger;
@@ -60,13 +60,19 @@ Logger::Level Logger::initLevel() {
         return Level::TRACE;
     else if (::getenv("SEVENT_LOG_DEBUG"))
         return Level::DEBUG;
+    else if (::getenv("SEVENT_LOG_INFO"))
+        return Level::INFO;
+    else if (::getenv("SEVENT_LOG_ERROR"))
+        return Level::ERROR_;
+    else if (::getenv("SEVENT_LOG_FATAL"))
+        return Level::FATAL;
     else
         return Level::INFO;
 }
 
 void Logger::log(const char *file, int line, Level level, const string &msg) {
     LogEvent logEv(file, line, level);
-    logEv.getStream() << msg;
+    logEv.initStream() << msg;
 }
 
 void Logger::append(const char *data, int len) { output->append(data, len); }
@@ -170,7 +176,10 @@ LogEvent::LogEvent(const char *file, int line, Logger::Level level,bool isErr)
     #endif
     // FIXME: 在windows下, thread_local LogStream::FixedBuffer好像会未初始化(cur指针为0)?
     (void)stream;
+}
+LogStream &LogEvent::initStream() {
     Logger::instance().msgBefore(*this);
+    return stream;
 }
 LogEvent::~LogEvent() {
     Logger::instance().msgAfter(*this);

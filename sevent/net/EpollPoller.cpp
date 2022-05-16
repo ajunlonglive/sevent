@@ -35,16 +35,14 @@ void EpollPoller::updateChannel(Channel *channel) {
     // ownerLoop->assertInOwnerThread();
     int status = channel->getStatus();
     socket_t fd = channel->getFd();
-    if (status == removed)
-        return;
     if (status == ready) {
-        // 新增
+        // 新增, 添加到监听列表和channelMap
         assert(channelMap.find(fd) == channelMap.end());
         channelMap[fd] = channel;
         channel->setStatus(normal);
         update(EPOLL_CTL_ADD, channel);
-    } else {
-        // 更新/忽略
+    } else if (status == normal) {
+        // 更新/忽略, 更新监听列表
         assert(channelMap.find(fd) != channelMap.end());
         assert(channelMap.find(fd)->second == channel);
         if (channel->isNoneEvent()) {
@@ -53,6 +51,10 @@ void EpollPoller::updateChannel(Channel *channel) {
         } else {
             update(EPOLL_CTL_MOD, channel);
         }
+    } else {
+        // status = removed, 添加到监听列表
+        channel->setStatus(normal);
+        update(EPOLL_CTL_ADD, channel);        
     }
 }
 

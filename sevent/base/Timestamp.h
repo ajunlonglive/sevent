@@ -28,7 +28,7 @@ public:
     // static Timestamp addMonth(Timestamp t, int64_t Month);
 
 public:
-    static const int microSecondUnit = 1000000;
+    static const int microSecondUnit = 1000000; // second <-> micorsecond
 private:
     int64_t microSecond;
 };

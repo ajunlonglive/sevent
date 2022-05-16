@@ -9,6 +9,11 @@
 using namespace std;
 using namespace sevent;
 using namespace sevent::net;
+namespace {
+const int ready = -1;   //既不在监听列表,也不再channelMap
+const int normal = 1;   //在监听列表和channelMap
+const int removed = 2;  //不在监听列表,在channelMap
+} // namespace
 SelectPoller::SelectPoller() : maxfd(-1) {}
 SelectPoller::~SelectPoller() = default;
 
@@ -23,15 +28,17 @@ void SelectPoller::reset() {
     int count = 0;
     for (pair<const socket_t, Channel *> &item : channelMap) {
         Channel *ch = item.second;
+        if (ch->getStatus() != normal)
+            continue;
         socket_t fd = ch->getFd();
         bool isread = false;
         bool iswrite = false;
-        if (ch->getEvents() & Channel::ReadEvent) {
+        if (ch->isEnableRead()) {
             FD_SET(fd, &rset);
             FD_SET(fd, &eset);
             isread = true;
         }
-        if (ch->getEvents() & Channel::WriteEvent) {
+        if (ch->isEnableWrite()) {
             FD_SET(fd, &wset);
             iswrite = true;
         }
@@ -60,23 +67,32 @@ int SelectPoller::doPoll(int timeout) {
 
 // 更新事件到监听队列
 void SelectPoller::updateChannel(Channel *channel) {
-if (channel->getIndex() < 0) {
+    int status = channel->getStatus();
+    if (status == ready) {
         //新增
         assert(channelMap.find(channel->getFd()) == channelMap.end());
         channelMap[channel->getFd()] = channel;
-    } else {
+        channel->setStatus(normal);
+    } else if (status == normal) {
         assert(channelMap.find(channel->getFd()) != channelMap.end());
         assert(channelMap[channel->getFd()] == channel);
+        if (channel->isNoneEvent())
+            channel->setStatus(removed);
+    } else {
+        // status = removed
+        channel->setStatus(normal);
     }
 }
 
 // 移除 channelMap[fd]
 void SelectPoller::removeChannel(Channel* channel) {
     channelMap.erase(channel->getFd());
+    channel->setStatus(ready);
 }
 
 
 void SelectPoller::fillActiveChannels(int count) {
+    // libevent:win32select.c 是分别遍历read/write/exceptionSet
     using iter = map<socket_t, Channel *>::iterator;
     for (iter it = channelMap.begin(); it != channelMap.end() && count > 0; ++it) {
         Channel *ch = it->second;

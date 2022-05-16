@@ -10,8 +10,8 @@ target_link_libraries(InetAddress_test sevent_net)
 add_executable(TimerQueue_test TimerQueue_test.cpp)
 target_link_libraries(TimerQueue_test sevent_net)
 
-add_executable(EcentLoop_test EcentLoop_test.cpp)
-target_link_libraries(EcentLoop_test sevent_net)
+add_executable(EventLoop_test EventLoop_test.cpp)
+target_link_libraries(EventLoop_test sevent_net)
 
 add_executable(TcpClient_test1 TcpClient_test1.cpp)
 target_link_libraries(TcpClient_test1 sevent_net)

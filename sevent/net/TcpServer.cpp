@@ -37,7 +37,7 @@ Acceptor *TcpServer::createAccepptor(EventLoop *loop, const InetAddress &listenA
     return new Acceptor(loop, listenAddr, std::bind(&TcpServer::onConnection, this, _1, _2));
 }
 
-void TcpServer::start() {
+void TcpServer::listen() {
     if (!started.exchange(true)) {
         workers->start(initCallBack);
         ownerLoop->runInLoop(std::bind(&Acceptor::listen, std::ref(acceptor)));
@@ -78,8 +78,11 @@ const InetAddress &TcpServer::getListenAddr() { return acceptor->getAddr(); }
 void TcpServer::setWorkerInitCallback( const std::function<void(EventLoop *)> &cb) {
     initCallBack = cb;
 }
-
-int TcpServer::setSockOpt(int level, int optname, const int *optval) {
-    return sockets::setsockopt(acceptor->getFd(), level, optname, optval,
-                        static_cast<socklen_t>(sizeof(int)));
+// 对监听socket设置这些socket选项,那么accept返回的连接socket将自动继承这些选项:(Linux高性能服务器编程)
+// SO_DEBUG、SO_DONTROUTE、SO_KEEPALIVE、SO_LINGER、
+// SO_OOBINLINE、SO_RCVBUF、SO_RCVLOWAT、SO_SNDBUF、
+// SO_SNDLOWAT、TCP_MAXSEG和TCP_NODELAY
+// 而对客户端而言,这些socket选项则应该在调用connect函数之前设置,因为connect调用成功返回之后,TCP三次握手已完成
+int TcpServer::setSockOpt(int level, int optname, const void *optval, socklen_t optlen) {
+    return sockets::setsockopt(acceptor->getFd(), level, optname, optval, optlen);
 }

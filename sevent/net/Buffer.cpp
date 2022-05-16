@@ -13,7 +13,7 @@ const char Buffer::CRLF[3] = "\r\n";
 
 ssize_t Buffer::readFd(socket_t fd) {
     size_t writeable = writableBytes();
-    #ifndef _WIN32
+    #ifndef _WIN32 //TODO WSABUF, WSASend
     char extrabuf[65535]; //64KB
     iovec iov[2];
     iov[0].iov_base = writePos();
@@ -40,7 +40,7 @@ ssize_t Buffer::readFd(socket_t fd) {
 ssize_t Buffer::writeFd(socket_t fd) {
     ssize_t n = sockets::write(fd, readPos(), readableBytes());
     if (n > 0) 
-        readIndex += n;
+        retrieve(n);
     return n;
 }
 void Buffer::retrieve(size_t len) {

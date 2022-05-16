@@ -6,6 +6,7 @@
 #include <arpa/inet.h>
 #else
 #include <ws2tcpip.h>
+#include <stdio.h>
 #endif
 namespace sevent {
 namespace net {
@@ -17,6 +18,7 @@ void setErrno(int err);
 ssize_t readv(socket_t fd, const struct iovec *iov, int iovcnt);
 ssize_t read(socket_t fd, void *buf, size_t count);
 ssize_t write(socket_t fd, const void *buf, size_t count);
+ssize_t sendfile(int out_fd, int in_fd, off_t *offset, size_t count);
 
 socket_t open(const char *pathname, int flags);
 int close(socket_t fd);

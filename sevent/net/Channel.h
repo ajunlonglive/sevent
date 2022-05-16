@@ -11,12 +11,14 @@ class EventLoop;
 class Channel : noncopyable {
 public:
     Channel(socket_t fd, EventLoop *loop);
+    // virtual ~Channel() = default;
 
     void handleEvent();
     void setRevents(int revt) { revents = revt; }
     bool isNoneEvent() const { return events == NoneEvent; }
+    bool isEnableRead() const { return events & ReadEvent; }
     bool isEnableWrite() const { return events & WriteEvent; }
-    // 更新/移出监听事件列表(Poller)
+    // 更新/移出监听事件列表(Poller) // 只能被ownerLoop所属线程调用
     void enableReadEvent() { events |= ReadEvent; updateEvent(); }
     void enableWriteEvent() { events |= WriteEvent; updateEvent(); }
     void disableReadEvent() { events &= ~ReadEvent; updateEvent(); }

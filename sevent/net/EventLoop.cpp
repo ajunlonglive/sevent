@@ -133,4 +133,4 @@ void EventLoop::cancelTimer(TimerId timerId) {
     timerManager->cancel(std::move(timerId));
 }
 
-const Timestamp EventLoop::getPollTime() const { return poller->getPollTime(); }
+Timestamp EventLoop::getPollTime() const { return poller->getPollTime(); }

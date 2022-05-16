@@ -1,12 +1,14 @@
 #ifndef SEVENT_NET_TCPCONNECTION_H
 #define SEVENT_NET_TCPCONNECTION_H
 
+#include "sevent/base/Timestamp.h"
 #include "sevent/net/Buffer.h"
 #include "sevent/net/Channel.h"
 #include "sevent/net/InetAddress.h"
 #include <stdint.h>
 #include <memory>
 #include <string>
+#include <unordered_map>
 namespace sevent {
 namespace net {
 
@@ -35,12 +37,26 @@ public:
     void send(const std::string &&data); // std::move(data)
     void send(Buffer &buf); 
     void send(Buffer &&buf); // Buffer::swap
+    // void send(FILE *fp); // TODO sendfile
     void shutdown(); // 设置状态disconnecting, 若outputBuf存在数据, 则发送完毕后, 才shutdown(WR)
     void forceClose(); // 调用close, 有可能会丢失数据
+    void enableRead();
+    void disableRead();
+    bool isReading() const { return isRead; }
 
-    void setHighWaterMark(size_t hwMark) { hightWaterMark = hwMark; }
-    int setSockOpt(int level, int optname, const int *optval);
+    std::unordered_map<std::string, void *> &getContext() { return context; }
+    // 注意内存泄漏, TcpConnectin不管理value内存
+    void *&getContext(const std::string &key) { return context[key]; }
+    void setContext(const std::string &key, void *value) { context[key] = value;}
+    void removeContext(const std::string &key) { context.erase(key); } 
+    void setTcpNoDelay(bool on);
+    int setSockOpt(int level, int optname, const void *optval, socklen_t optlen); 
+    int getsockopt(int level, int optname, void *optval, socklen_t *optlen);
+    void setHighWaterMark(size_t bytes) { hightWaterMark = bytes; }
+    socket_t getsockfd() { return fd; }
     int64_t getId() { return id; }
+    // 获取poll/epoll_wait等返回时的时刻
+    Timestamp getPollTime();
     EventLoop *getLoop() { return getOwnerLoop(); }
     const InetAddress &getLocalAddr() const { return localAddr; }
     const InetAddress &getPeerAddr() const { return peerAddr; }
@@ -58,10 +74,12 @@ private:
     void sendInLoopBuf(Buffer &buf);
     void shutdownInLoop();
     void forceCloseInLoop();
+    void enableReadInLoop();
+    void disableReadInLoop();
     void tie() {}
     // for TcpServer
     friend class TcpServer;
-    friend class TcpClient;
+    // friend class TcpClient;
     friend class Connector;
     // for Acceptor::handleRead -> TcpServer::onConnection -> onConnection
     void onConnection();
@@ -70,6 +88,7 @@ private:
     void removeItself();
 
 private:
+    bool isRead;
     int64_t id;
     State state;
     TcpConnectionHolder *tcpHolder;
@@ -78,7 +97,8 @@ private:
     const InetAddress peerAddr;
     Buffer inputBuf;
     Buffer outputBuf;
-    size_t hightWaterMark;
+    size_t hightWaterMark; // 默认: 64 * 1024 * 1024
+    std::unordered_map<std::string, void *> context; // TODO std::any C++17?
 };
 
 } // namespace net

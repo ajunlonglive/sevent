@@ -1,5 +1,6 @@
 #include "sevent/net/TcpConnection.h"
 
+#include "sevent/base/CommonUtil.h"
 #include "sevent/base/Logger.h"
 #include "sevent/net/EventLoop.h"
 #include "sevent/net/SocketsOps.h"
@@ -15,7 +16,7 @@ using namespace sevent::net;
 TcpConnection::TcpConnection(EventLoop *loop, socket_t sockfd, int64_t connId,
                              const InetAddress &localAddr,
                              const InetAddress &peerAddr)
-    : Channel(sockfd, loop), id(connId), state(connecting),
+    : Channel(sockfd, loop),isRead(true), id(connId), state(connecting),
       localAddr(localAddr), peerAddr(peerAddr), hightWaterMark(64 * 1024 * 1024) {
     
 }
@@ -93,6 +94,7 @@ void TcpConnection::sendInLoopBuf(Buffer &buf) {
     if (!Channel::isEnableWrite() && outputBuf.readableBytes() == 0) {
         n = sockets::write(fd, buf.peek(), len);
         if (n >= 0) {
+            buf.retrieve(n);
             remain -= n;
             if (remain == 0 && tcpHandler != nullptr)
                 tcpHandler->onWriteComplete(shared_from_this()); 
@@ -118,7 +120,6 @@ void TcpConnection::sendInLoopBuf(Buffer &buf) {
         size_t oldLen = outputBuf.readableBytes();
         if (oldLen + remain >= hightWaterMark && oldLen < hightWaterMark && tcpHandler != nullptr)
             tcpHandler->onHighWaterMark(shared_from_this(), oldLen + remain);
-        buf.retrieve(n);
         if (oldLen == 0) {
             outputBuf.swap(buf);
         } else  {
@@ -127,8 +128,8 @@ void TcpConnection::sendInLoopBuf(Buffer &buf) {
         }
         if (!Channel::isEnableWrite())
             Channel::enableWriteEvent();
-        LOG_TRACE << "TcpConnection::sendInLoop(), len = " << len
-                  << ", n = " << n << ", remain = " << remain;
+        LOG_TRACE << "TcpConnection::sendInLoopBuf(), len = " << len << ", write = " 
+                  << n << ", remain = " << remain << ", buf = " << (oldLen + remain);
     }
 }
 
@@ -178,8 +179,8 @@ void TcpConnection::sendInLoop(const void *data, size_t len) {
         outputBuf.append(static_cast<const char *>(data) + n, remain);
         if (!Channel::isEnableWrite())
             Channel::enableWriteEvent();
-        LOG_TRACE << "TcpConnection::sendInLoop(), len = " << len
-                  << ", n = " << n << ", remain = " << remain;
+        LOG_TRACE << "TcpConnection::sendInLoop(), len = " << len << ", write = " 
+                  << n << ", remain = " << remain << ", buf = " << (oldLen + remain);
     }
 }
 
@@ -195,7 +196,7 @@ void TcpConnection::shutdownInLoop() {
         LOG_TRACE << "TcpConnection::shutdownInLoop() - set disconnecting";
         if (!Channel::isEnableWrite()){
             sockets::shutdownWrite(fd);
-            LOG_TRACE << "TcpConnection::shutdownInLoop() - shutdownWrite";
+            LOG_TRACE << "TcpConnection::shutdownInLoop() - shutdown(SHUT_WR)";
         }
     }
 }
@@ -221,18 +222,24 @@ void TcpConnection::handleRead() {
             handleClose();
         } else {
             handleError();
+            #ifdef _WIN32
+            handleClose();
+            #endif
         }
     }
 }
 
 void TcpConnection::handleWrite() {
-    // 一旦发生错误, handleRead会读到0
+    // 一旦发生错误, handleRead会读到0(若没注册读事件, Channel::handleEvent则直接发生handleClose)
     ownerLoop->assertInOwnerThread();
     if (state == disconnected) 
         return;
     if (Channel::isEnableWrite()) {
         ssize_t n = outputBuf.writeFd(fd);
         if (n > 0) {
+            LOG_TRACE << "TcpConnection::handleWrite(), len = "
+                      << n + outputBuf.readableBytes() << ", write = " << n
+                      << ", remain = " << outputBuf.readableBytes();
             if (outputBuf.readableBytes() == 0) {
                 Channel::disableWriteEvent();
                 if (tcpHandler)
@@ -240,12 +247,13 @@ void TcpConnection::handleWrite() {
                 if (state == disconnecting)
                     sockets::shutdownWrite(fd);
             }
-            LOG_TRACE << "TcpConnection::handleWrite(), len = "
-                      << n + outputBuf.readableBytes() << ", n = " << n
-                      << ", remain = " << outputBuf.readableBytes();
         } else {
-            if (n != 0)
+            if (n != 0) {
                 LOG_SYSERR << "TcpConnection::handleWrite()";
+                // 若使用select, 因为select通过read/writeSet(handleRead/Write), 判断错误 
+                // 若取消读事件, 将不会发生handleRead, 也就不会触发错误处理(所以读写都过程需要错误处理)
+                handleClose();
+            }
         }
     } else {
         LOG_TRACE << "Connection fd = " << fd << " is disableWriteEvent, no more writing";
@@ -276,9 +284,14 @@ void TcpConnection::handleClose() {
 void TcpConnection::handleError() {
     if (state == disconnected)
         return;
+    #ifndef _WIN32
     int err = sockets::getSocketError(fd);
     LOG_ERROR << "TcpConnection::handleError(), id = " << id << ", fd = " << fd
-              << ", SO_ERROR = " << err << " ," << peerAddr.toStringIpPort();
+            << ", SO_ERROR = " << err << ", "<< peerAddr.toStringIpPort();
+    #else
+    LOG_SYSERR << "TcpConnection::handleError(), id = " << id << ", fd = " << fd
+               << ", " << peerAddr.toStringIpPort();
+    #endif
 }
 
 void TcpConnection::removeItself() {
@@ -307,7 +320,34 @@ void TcpConnection::forceCloseInLoop() {
         fd = -fd - 1; // TODO windows
     }
 }
-int TcpConnection::setSockOpt(int level, int optname, const int *optval) {
-    return sockets::setsockopt(fd, level, optname, optval,
-                        static_cast<socklen_t>(sizeof(int)));
+
+void TcpConnection::enableRead() {
+    ownerLoop->runInLoop(std::bind(&TcpConnection::enableReadInLoop, this));
 }
+void TcpConnection::disableRead() {
+    ownerLoop->runInLoop(std::bind(&TcpConnection::disableReadInLoop, this));
+}
+void TcpConnection::enableReadInLoop() {
+    ownerLoop->assertInOwnerThread();
+    if (!isRead || !Channel::isEnableRead()) {
+        Channel::enableReadEvent();
+        isRead = true;
+    }
+}
+void TcpConnection::disableReadInLoop() {
+    ownerLoop->assertInOwnerThread();
+    if (isRead || Channel::isEnableRead()) {
+        Channel::disableReadEvent();
+        isRead = false;
+    }
+}
+void TcpConnection::setTcpNoDelay(bool on) { sockets::setTcpNoDelay(fd, on); }
+
+int TcpConnection::setSockOpt(int level, int optname, const void *optval, socklen_t optlen) {
+    return sockets::setsockopt(fd, level, optname, optval, optlen);
+}
+int TcpConnection::getsockopt(int level, int optname, void *optval, socklen_t *optlen) {
+    return sockets::getsockopt(fd, level, optname, optval, optlen);
+}
+
+Timestamp TcpConnection::getPollTime() { return ownerLoop->getPollTime(); }

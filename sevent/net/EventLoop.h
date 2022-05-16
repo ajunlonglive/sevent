@@ -50,7 +50,8 @@ public:
     void cancelTimer(TimerId timerId);
 
     const std::string getLoopName() { return loopName; }
-    const Timestamp getPollTime() const;
+    // 获取poll/epoll_wait等返回时的时刻
+    Timestamp getPollTime() const;
 
     static const int pollTimeout = 10000; // 10秒(10000 millsecond)
 private:

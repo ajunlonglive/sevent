@@ -62,7 +62,7 @@ void chomp(char *s) {
 const char *strerror_tl(int errnum) {
     #ifndef _WIN32
     thread_local char errnoBuf[512];
-    return strerror_r(err, errnoBuf, sizeof(errnoBuf));
+    return strerror_r(errnum, errnoBuf, sizeof(errnoBuf));
     #else
     thread_local string msgString;
     char *msgBuf = nullptr;

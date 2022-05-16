@@ -37,6 +37,8 @@ public:
     EventLoop *getOwnerLoop() const { return ownerLoop; }
     const InetAddress &getServerAddr() const;
 
+    // int setSockOpt(int level, int optname, const void *optval, socklen_t optlen); // TODO 
+
 private:
     Connector *createConnector(const InetAddress &addr);
 

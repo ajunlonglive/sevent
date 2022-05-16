@@ -42,7 +42,8 @@ public:
     const char *findCRLF() const;
     const char *findCRLF(const char *start) const;
 
-    // TODO 大端
+    // 读:netToHost
+    // 写:hostToNet
     int64_t peekInt64() const;
     int32_t peekInt32() const;
     int16_t peekInt16() const;
