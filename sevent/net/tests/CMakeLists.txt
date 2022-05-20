@@ -27,3 +27,6 @@ target_link_libraries(EchoClient_test sevent_net)
 
 add_executable(EchoServer_test EchoServer_test.cpp)
 target_link_libraries(EchoServer_test sevent_net)
+
+add_executable(TcpPipeline_test TcpPipeline_test.cpp)
+target_link_libraries(TcpPipeline_test sevent_net)

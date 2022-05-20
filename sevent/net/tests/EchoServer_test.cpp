@@ -19,8 +19,8 @@ private:
                  << conn->getLocalAddr().toStringIpPort();
         conn->send("hello\n");
     }
-    void onMessage(const TcpConnection::ptr &conn, Buffer &buf) {
-        string msg = buf.readAllAsString();
+    void onMessage(const TcpConnection::ptr &conn, Buffer *buf) {
+        string msg = buf->readAllAsString();
         if (msg == "exit\r\n") {
             cout<<"exit"<<endl;
             conn->send("bye\n");

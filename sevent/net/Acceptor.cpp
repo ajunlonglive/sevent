@@ -40,11 +40,12 @@ socket_t Acceptor::accept() {
         }
     } else {
         #ifndef _WIN32 // TODO WSAEMFILE 
+        // 多线程下不能保证正确(若多个accept不是同一个EventLoop管理, 会有race condition)
         if (sockets::getErrno() == EMFILE) {
             sockets::close(idleFd);
             idleFd = sockets::accept(fd, nullptr, nullptr);
             sockets::close(idleFd);
-            idleFd = sockets::openIdelFd();
+            idleFd = sockets::openIdelFd(); 
         }
         #endif
         // LOG_TRACE << "Acceptor::accept() - err, fd = " << connfd;

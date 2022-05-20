@@ -56,7 +56,7 @@ void TcpConnection::send(const std::string &&data) {
         }
     }
 }
-
+void TcpConnection::send(Buffer *buf) { send(*buf); }
 void TcpConnection::send(Buffer &buf) {
     if (state == connected) {
         if (ownerLoop->isInOwnerThread()) {
@@ -97,7 +97,9 @@ void TcpConnection::sendInLoopBuf(Buffer &buf) {
             buf.retrieve(n);
             remain -= n;
             if (remain == 0 && tcpHandler != nullptr)
-                tcpHandler->onWriteComplete(shared_from_this()); 
+                ownerLoop->queueInLoop(std::bind(&TcpHandler::onWriteComplete,
+                                                 tcpHandler,
+                                                 shared_from_this()));
         } else {
             n = 0;
             #ifndef _WIN32
@@ -119,7 +121,9 @@ void TcpConnection::sendInLoopBuf(Buffer &buf) {
     if (!isErr && remain > 0) {
         size_t oldLen = outputBuf.readableBytes();
         if (oldLen + remain >= hightWaterMark && oldLen < hightWaterMark && tcpHandler != nullptr)
-            tcpHandler->onHighWaterMark(shared_from_this(), oldLen + remain);
+            ownerLoop->queueInLoop(std::bind(&TcpHandler::onHighWaterMark,
+                                             tcpHandler, shared_from_this(),
+                                             oldLen + remain));
         if (oldLen == 0) {
             outputBuf.swap(buf);
         } else  {
@@ -128,7 +132,7 @@ void TcpConnection::sendInLoopBuf(Buffer &buf) {
         }
         if (!Channel::isEnableWrite())
             Channel::enableWriteEvent();
-        LOG_TRACE << "TcpConnection::sendInLoopBuf(), len = " << len << ", write = " 
+        LOG_TRACE << "TcpConnection::sendInLoopBuf(), fd = "<< fd << " len = " << len << ", write = " 
                   << n << ", remain = " << remain << ", buf = " << (oldLen + remain);
     }
 }
@@ -148,12 +152,15 @@ void TcpConnection::sendInLoop(const void *data, size_t len) {
     bool isErr = false;
     // 若不存在写事件, 并且outputBuf不存在数据,直接write;
     // 若write有剩余或已存在写事件,则保存到Buffer,注册写事件(写完后取消写事件)
+    // queueInLoop(onWriteComplete), 防止递归调用send
     if (!Channel::isEnableWrite() && outputBuf.readableBytes() == 0) {
         n = sockets::write(fd, data, len);
         if (n >= 0) {
             remain -= n;
             if (remain == 0 && tcpHandler != nullptr)
-                tcpHandler->onWriteComplete(shared_from_this()); 
+                ownerLoop->queueInLoop(std::bind(&TcpHandler::onWriteComplete,
+                                                 tcpHandler,
+                                                 shared_from_this()));
         } else {
             n = 0;
             #ifndef _WIN32
@@ -175,11 +182,13 @@ void TcpConnection::sendInLoop(const void *data, size_t len) {
     if (!isErr && remain > 0) {
         size_t oldLen = outputBuf.readableBytes();
         if (oldLen + remain >= hightWaterMark && oldLen < hightWaterMark && tcpHandler != nullptr)
-            tcpHandler->onHighWaterMark(shared_from_this(), oldLen + remain);
+            ownerLoop->queueInLoop(std::bind(&TcpHandler::onHighWaterMark,
+                                             tcpHandler, shared_from_this(),
+                                             oldLen + remain));
         outputBuf.append(static_cast<const char *>(data) + n, remain);
         if (!Channel::isEnableWrite())
             Channel::enableWriteEvent();
-        LOG_TRACE << "TcpConnection::sendInLoop(), len = " << len << ", write = " 
+        LOG_TRACE << "TcpConnection::sendInLoop(), fd = "<< fd <<" len = " << len << ", write = " 
                   << n << ", remain = " << remain << ", buf = " << (oldLen + remain);
     }
 }
@@ -193,10 +202,10 @@ void TcpConnection::shutdownInLoop() {
     ownerLoop->assertInOwnerThread();
     if (state == connected) {
         setTcpState(disconnecting);
-        LOG_TRACE << "TcpConnection::shutdownInLoop() - set disconnecting";
+        LOG_TRACE << "TcpConnection::shutdownInLoop() - set disconnecting, fd = " << fd;
         if (!Channel::isEnableWrite()){
             sockets::shutdownWrite(fd);
-            LOG_TRACE << "TcpConnection::shutdownInLoop() - shutdown(SHUT_WR)";
+            LOG_TRACE << "TcpConnection::shutdownInLoop() - shutdown(SHUT_WR), fd = " << fd;
         }
     }
 }
@@ -216,9 +225,9 @@ void TcpConnection::handleRead() {
         ssize_t n = inputBuf.readFd(fd);
         if (n > 0) {
             if (tcpHandler)
-                tcpHandler->onMessage(shared_from_this(), inputBuf);
+                tcpHandler->onMessage(shared_from_this(), &inputBuf);
         } else if (n == 0) { //对端关闭
-            LOG_TRACE << "TcpConnection::handleRead() - read = 0";
+            LOG_TRACE << "TcpConnection::handleRead() - read = 0, fd = " << fd;
             handleClose();
         } else {
             handleError();
@@ -237,13 +246,14 @@ void TcpConnection::handleWrite() {
     if (Channel::isEnableWrite()) {
         ssize_t n = outputBuf.writeFd(fd);
         if (n > 0) {
-            LOG_TRACE << "TcpConnection::handleWrite(), len = "
+            LOG_TRACE << "TcpConnection::handleWrite(), fd = "<< fd << " len = "
                       << n + outputBuf.readableBytes() << ", write = " << n
                       << ", remain = " << outputBuf.readableBytes();
             if (outputBuf.readableBytes() == 0) {
                 Channel::disableWriteEvent();
                 if (tcpHandler)
-                    tcpHandler->onWriteComplete(shared_from_this());
+                    ownerLoop->queueInLoop(std::bind(&TcpHandler::onWriteComplete, tcpHandler,
+                                  shared_from_this()));
                 if (state == disconnecting)
                     sockets::shutdownWrite(fd);
             }
@@ -264,6 +274,7 @@ void TcpConnection::handleWrite() {
     // 1.主动调用(forceClose->handleClose)
     // 2.read == 0 (对端关闭写(EPOLLRDHUP)/本端关闭读)
     // 3.EPOLLHUP & !EPOLLIN (对端RST/本端和对端都shutdown(WR)/本端shutdown(RDWR))
+    // 4.write == -1
 // 2.handleClose会发生什么?
     // 移除TcpConnection; 先移除Poller的监听队列/channelMap,后TcpServer的connections
     // (有可能执行多次handleClose, 但是只移除一次)
@@ -311,13 +322,18 @@ void TcpConnection::forceClose() {
     }
 }
 
+void TcpConnection::forceClose(int64_t delayMs) {
+    if (state == connected || state == disconnecting)
+        ownerLoop->addTimer(delayMs, std::bind(&TcpConnection::forceCloseInLoop, shared_from_this()));
+}
+
 void TcpConnection::forceCloseInLoop() {
     ownerLoop->assertInOwnerThread();
     if (state == connected || state == disconnecting) {
         setTcpState(disconnecting);
         handleClose();
         sockets::close(fd);
-        fd = -fd - 1; // TODO windows
+        fd = -fd - 1;
     }
 }
 

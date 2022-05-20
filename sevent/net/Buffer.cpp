@@ -13,8 +13,8 @@ const char Buffer::CRLF[3] = "\r\n";
 
 ssize_t Buffer::readFd(socket_t fd) {
     size_t writeable = writableBytes();
-    #ifndef _WIN32 //TODO WSABUF, WSASend
-    char extrabuf[65535]; //64KB
+    #ifndef _WIN32 // TODO WSARecv?
+    char extrabuf[65536]; //64KB
     iovec iov[2];
     iov[0].iov_base = writePos();
     iov[0].iov_len = writeable;
@@ -27,17 +27,25 @@ ssize_t Buffer::readFd(socket_t fd) {
     ssize_t n = sockets::read(fd, writePos(), writeable);
     #endif
     if (n > 0) {
+        #ifndef _WIN32
         if (static_cast<size_t>(n) <= writeable) {
             writeIndex += n;
         } else {
-            #ifndef _WIN32
+            writeIndex = buffer.size();
             append(extrabuf, n - writeable);
-            #endif
         }
+        #else
+        if (static_cast<size_t>(n) <= writeable) {
+            writeIndex += n;
+            if (writableBytes() == 0)
+                ensureSpace(static_cast<size_t>(n)); // 扩容
+        } 
+        #endif
     }
     return n;
 }
 ssize_t Buffer::writeFd(socket_t fd) {
+    //TODO WSABUF, WSASend
     ssize_t n = sockets::write(fd, readPos(), readableBytes());
     if (n > 0) 
         retrieve(n);
@@ -50,6 +58,7 @@ void Buffer::retrieve(size_t len) {
         retrieveAll();
     }
 }
+void Buffer::retrieveUntil(const char *end) { retrieve(end - peek()); }
 void Buffer::retrieveAll() {
     readIndex = prepends;
     writeIndex = prepends;

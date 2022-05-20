@@ -21,8 +21,8 @@ private:
                  << conn->getLocalAddr().toStringIpPort();
         conn->send("world\n");
     }
-    void onMessage(const TcpConnection::ptr &conn, Buffer &buf) {
-        string msg = buf.readAllAsString();
+    void onMessage(const TcpConnection::ptr &conn, Buffer *buf) {
+        string msg = buf->readAllAsString();
         if (msg == "quit\r\n") {
             conn->send("bye\n");
             conn->shutdown();

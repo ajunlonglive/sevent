@@ -5,7 +5,7 @@
 #include <thread>
 #include <string>
 namespace sevent {
-
+// FIXME 用namespace?
 class CurrentThread {
 public:
     static int gettid();

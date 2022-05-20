@@ -17,10 +17,11 @@ public:
     EventLoopWorkers(EventLoop *baseloop, int threadNums);
     ~EventLoopWorkers();
     // ThreadInitCallback:创建线程的时候,loop之前
-    void start(const ThreadInitCallback &cb);
+    void start(const ThreadInitCallback &cb = ThreadInitCallback());
     EventLoop *getNextLoop();
     // 当threadNum=0时,baseLoop就是workerLoop
     std::vector<EventLoop *> &getWorkerLoops() { return workerloops; }
+    int getThreadNums() { return threadNums; }
 
 private:
     EventLoop *baseloop;

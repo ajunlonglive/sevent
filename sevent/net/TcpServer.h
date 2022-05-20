@@ -56,8 +56,7 @@ private:
     std::unique_ptr<Acceptor> acceptor;
     std::unique_ptr<EventLoopWorkers> workers; // 每个TcpServer独自创建workers, workerloop不共享
     std::function<void(EventLoop *)> initCallBack;
-    std::unordered_map<int64_t, std::shared_ptr<TcpConnection>> connections; 
-    // TODO 单纯保存数据, 单调递增, map:id+string?
+    std::unordered_map<int64_t, std::shared_ptr<TcpConnection>> connections;
 };
 
 } // namespace net

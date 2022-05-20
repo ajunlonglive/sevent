@@ -344,6 +344,11 @@ void sockets::setNoBlockAndCloseonexecFast(socket_t sockfd) {
 }
 
 void sockets::createSocketpair(socket_t fd[2]) {
+    #ifndef _WIN32
+    int ret = ::socketpair(AF_UNIX, SOCK_STREAM, 0, fd);
+    if (ret < 0)
+        LOG_SYSFATAL << "sockets::createSocketpair() - socketpair failed";
+    #else
     socket_t acceptor = -1;
     socket_t listener = sockets::socket(AF_INET, SOCK_STREAM, 0);
     socket_t connector = sockets::socket(AF_INET, SOCK_STREAM, 0);
@@ -377,4 +382,5 @@ void sockets::createSocketpair(socket_t fd[2]) {
     fd[1] = acceptor;
     setNoBlockAndCloseonexecFast(fd[0]);
     setNoBlockAndCloseonexecFast(fd[1]);
+#endif
 }

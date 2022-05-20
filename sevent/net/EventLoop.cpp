@@ -36,7 +36,7 @@ EventLoop::~EventLoop() {
 
 void EventLoop::loop() { 
     assertInOwnerThread();
-    LOG_TRACE << "EventLoop::loop() - start looping, " << loopName << " = " << this;
+    LOG_INFO << "EventLoop::loop() - start looping, " << loopName << " = " << this;
     while (!isQuit) {
         #ifdef _WIN32
         timeout = timerManager->getNextTimeout();
@@ -51,7 +51,7 @@ void EventLoop::loop() {
         }
         doPendingTasks();
     }
-    LOG_TRACE << "EventLoop::loop() - stop looping, " << loopName << " = " << this;
+    LOG_INFO << "EventLoop::loop() - stop looping, " << loopName << " = " << this;
 }
 
 void EventLoop::quit() { 

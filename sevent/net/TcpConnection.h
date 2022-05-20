@@ -6,6 +6,7 @@
 #include "sevent/net/Channel.h"
 #include "sevent/net/InetAddress.h"
 #include <stdint.h>
+#include <any>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -35,19 +36,22 @@ public:
     void send(const void *data, size_t len);
     void send(const std::string &data); 
     void send(const std::string &&data); // std::move(data)
+    void send(Buffer *buf);
     void send(Buffer &buf); 
     void send(Buffer &&buf); // Buffer::swap
     // void send(FILE *fp); // TODO sendfile
     void shutdown(); // 设置状态disconnecting, 若outputBuf存在数据, 则发送完毕后, 才shutdown(WR)
     void forceClose(); // 调用close, 有可能会丢失数据
+    void forceClose(int64_t delayMs); // 延迟ms后, forceClose
     void enableRead();
     void disableRead();
     bool isReading() const { return isRead; }
+    bool isConnected() const { return state & connected; }
 
-    std::unordered_map<std::string, void *> &getContext() { return context; }
-    // 注意内存泄漏, TcpConnectin不管理value内存
-    void *&getContext(const std::string &key) { return context[key]; }
-    void setContext(const std::string &key, void *value) { context[key] = value;}
+    std::unordered_map<std::string, std::any> &getContext() { return context; }
+    std::any &getContext(const std::string &key) { return context[key]; }
+    void setContext(const std::string &key, std::any &value) { context[key] = value;}
+    void setContext(const std::string &key, std::any &&value) { context[key] = std::move(value);}
     void removeContext(const std::string &key) { context.erase(key); } 
     void setTcpNoDelay(bool on);
     int setSockOpt(int level, int optname, const void *optval, socklen_t optlen); 
@@ -60,6 +64,11 @@ public:
     EventLoop *getLoop() { return getOwnerLoop(); }
     const InetAddress &getLocalAddr() const { return localAddr; }
     const InetAddress &getPeerAddr() const { return peerAddr; }
+
+    Buffer *getInputBuf() { return &inputBuf; }
+    Buffer *getOutputBuf() { return &outputBuf; }
+    // 非线程安全, 应该在创建TcpConnectin时调用或在ownerThread中调用
+    void setTcpHandler(TcpHandler *handler) { tcpHandler = handler; }
 
 private:
     enum State { connecting, connected, disconnecting, disconnected };
@@ -84,7 +93,6 @@ private:
     // for Acceptor::handleRead -> TcpServer::onConnection -> onConnection
     void onConnection();
     void setTcpHolder(TcpConnectionHolder *holder) { tcpHolder = holder; }
-    void setTcpHandler(TcpHandler *handler) { tcpHandler = handler; }
     void removeItself();
 
 private:
@@ -98,7 +106,7 @@ private:
     Buffer inputBuf;
     Buffer outputBuf;
     size_t hightWaterMark; // 默认: 64 * 1024 * 1024
-    std::unordered_map<std::string, void *> context; // TODO std::any C++17?
+    std::unordered_map<std::string, std::any> context; // std::any C++17
 };
 
 } // namespace net

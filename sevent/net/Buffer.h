@@ -28,6 +28,7 @@ public:
 
     // 手动移动readIndex;
     void retrieve(size_t len);
+    void retrieveUntil(const char *end);
     // 复原readIndex和writeIndex
     void retrieveAll();
     void swap(Buffer &buf);

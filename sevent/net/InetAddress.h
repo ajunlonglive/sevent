@@ -34,6 +34,7 @@ public:
     std::string toStringIp() const;
     std::string toStringIpPort() const;
     uint16_t getPortHost() const;
+    uint32_t getIpNet() const { return addr.sin_addr.s_addr; }
     uint16_t family() const { return addr.sin_family; }
 
     static bool resolve(const std::string& hostname, InetAddress *iaddr);
