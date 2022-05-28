@@ -25,13 +25,15 @@ public:
             string s = buf->readAllAsString();
             LOG_INFO << "MyHandler1 recv size = " << s.size() << " bytes";
             msg = std::move(s);
-            return true;
         }
-        return false;
+        return true;
     }
-    bool handleWrite(const TcpConnection::ptr &conn, std::any &msg, size_t size) { 
+    bool handleWrite(const TcpConnection::ptr &conn, std::any &msg, size_t &size) override { 
         string &s = any_cast<string&>(msg);
         s += "MyHandler1\n";
+        // msg = string -> const char*
+        // msg = s.c_str();
+        // size = s.length();
         return true; 
     }
 };
@@ -50,7 +52,7 @@ public:
         Buffer buf;
         buf.append(s.substr(0, s.size()-2));
         std::any a = buf;
-        write(conn, a);
+        write(conn, a); // handleWrite
         return true;
     }
     bool handleError(const TcpConnection::ptr &conn, std::any &msg) override {
@@ -58,7 +60,8 @@ public:
         conn->shutdown();
         return false;
     }
-    bool handleWrite(const TcpConnection::ptr &conn, std::any &msg, size_t size) { 
+    bool handleWrite(const TcpConnection::ptr &conn, std::any &msg, size_t &size) override { 
+        // msg = Buffer -> string
         Buffer &s = any_cast<Buffer&>(msg);
         msg = std::move(s.readAllAsString());
         return true; 
@@ -78,7 +81,7 @@ int main(int argc, char **argv){
     TcpServer server(&loop, 12345, threadNum);
     
     TcpPipeline pipeline;
-    pipeline.addLast(new MyHandler1);
+    pipeline.addLast(new MyHandler1); // delete
     pipeline.addLast(new MyHandler2);
     server.setTcpHandler(&pipeline); 
     server.listen();

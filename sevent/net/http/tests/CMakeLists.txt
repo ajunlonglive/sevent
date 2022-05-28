@@ -1,0 +1,2 @@
+add_executable(HttpParser_test HttpParser_test.cpp)
+target_link_libraries(HttpParser_test sevent_net)

@@ -1,8 +1,8 @@
 #include "sevent/net/Poller.h"
 #include "sevent/base/Logger.h"
-#include "sevent/net/EpollPoller.h"
-#include "sevent/net/PollPoller.h"
-#include "sevent/net/SelectPoller.h"
+#include "sevent/net/poller/EpollPoller.h"
+#include "sevent/net/poller/PollPoller.h"
+#include "sevent/net/poller/SelectPoller.h"
 #include "sevent/net/SocketsOps.h"
 #include <errno.h>
 
@@ -36,12 +36,12 @@ int Poller::poll(int timeout) {
 }
 
 Poller *Poller::newPoller() {
+    if (::getenv("SEVENT_USE_SELECT"))
+        return new SelectPoller;
     #ifndef _WIN32
-    if (::getenv("SEVENT_USE_POLL"))
+    else if (::getenv("SEVENT_USE_POLL"))
         return new PollPoller;
+    #endif
     else
         return new EpollPoller;
-    #else
-    return new SelectPoller;
-    #endif
 }

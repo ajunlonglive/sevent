@@ -1,11 +1,11 @@
 #ifndef SEVENT_NET_EPOLLPOLLER_H
 #define SEVENT_NET_EPOLLPOLLER_H
 
-#ifndef _WIN32
+#include "sevent/net/Poller.h"
 
-#include "Poller.h"
-
+extern "C" {
 struct epoll_event;
+}
 
 namespace sevent {
 namespace net {
@@ -27,7 +27,11 @@ private:
     void update(int operation, Channel *channel);
 
 private:
+    #ifndef _WIN32
     socket_t epfd;
+    #else
+    void *epfd;
+    #endif
     std::vector<epoll_event> eventList;
 
     static const int initSize = 16;
@@ -35,5 +39,4 @@ private:
 
 } // namespace net
 } // namespace sevent
-#endif
 #endif

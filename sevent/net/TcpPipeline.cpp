@@ -1,4 +1,5 @@
 #include "sevent/net/TcpPipeline.h"
+#include "sevent/base/Logger.h"
 
 using namespace std;
 using namespace sevent;
@@ -38,34 +39,36 @@ void TcpPipeline::onMessage(const TcpConnection::ptr &conn, Buffer *buf) {
 
 void TcpPipeline::invoke(handlerFunc1 func, const TcpConnection::ptr &conn) {
     PipelineHandler *handler = handlers.front();
+    invoke(func, conn, handler);
+}
+void TcpPipeline::invoke(handlerFunc2 func, const TcpConnection::ptr &conn, std::any &msg) {
+    PipelineHandler *handler = handlers.front();
+    invoke(func, conn, msg, handler);
+}
+// 从指定handler往后传播
+void TcpPipeline::invoke(handlerFunc1 func, const TcpConnection::ptr &conn, PipelineHandler *handler) {
     bool isNext = false;
     if (handler) {
         do {
             isNext = (handler->*func)(conn);
             handler = handler->nextHandler();
         } while (isNext && handler);
-    }
+    }    
 }
-void TcpPipeline::invoke(handlerFunc2 func, const TcpConnection::ptr &conn, std::any &msg) {
-    PipelineHandler *handler = handlers.front();
+void TcpPipeline::invoke(handlerFunc2 func, const TcpConnection::ptr &conn, std::any &msg, PipelineHandler *handler) {
     bool isNext = false;
     if (handler) {
         do {
             isNext = (handler->*func)(conn, msg);
             handler = handler->nextHandler();
         } while (isNext && handler);
-    }
+    }  
 }
 
 PipelineHandler::PipelineHandler() : prev(nullptr), next(nullptr) {}
 
 void PipelineHandler::onError(const TcpConnection::ptr &conn, std::any &msg) {
-    bool isNext = false;
-    PipelineHandler *handler = this;
-    do {
-        isNext = handler->handleError(conn, msg);
-        handler = handler->nextHandler();
-    } while (isNext && handler);
+    TcpPipeline::invoke(&PipelineHandler::handleError, conn, msg, this);
 }
 
 void PipelineHandler::write(const TcpConnection::ptr &conn, std::any &&msg, size_t size) {
@@ -79,19 +82,22 @@ void PipelineHandler::write(const TcpConnection::ptr &conn, std::any &msg, size_
         isNext = handler->handleWrite(conn, msg, size);
         handler = handler->prevHandler();
     } while (isNext && handler);
-    // 发送, 处理完后, msg类型只能为string/Buffer/void*
+    // 发送, 处理完后, msg类型只能为string/Buffer/const char*
     if (isNext && msg.has_value()) {
         const type_info &t = msg.type();
-        if (t == typeid(string)) {
-            conn->send(any_cast<string&>(msg));
-        } else if (t == typeid(Buffer)) {
-            conn->send(any_cast<Buffer&>(msg));
-        } else if (t == typeid(Buffer*)) {
-            conn->send(any_cast<Buffer>(&msg));
-        } else if (t == typeid(void*)) {
-            conn->send(any_cast<void>(&msg), size);
-        } else {
-            //onError? TODO
+        try{
+            if (t == typeid(string)) {
+                conn->send(any_cast<string&>(msg));
+            } else if (t == typeid(Buffer)) {
+                conn->send(any_cast<Buffer&>(msg));
+            } else if (t == typeid(const char*)) {
+                conn->send(any_cast<const char*>(msg), size);
+            } else {
+                //onError? TODO
+            }
+        } catch (std::bad_any_cast&) {
+            LOG_FATAL << "PipelineHandler::write() - bad_any_cast, msg should "
+                         "be string/Buffer/const char*";
         }
     }
 }

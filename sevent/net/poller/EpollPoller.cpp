@@ -1,12 +1,15 @@
-#include "EpollPoller.h"
-#ifndef _WIN32
+#include "sevent/net/poller/EpollPoller.h"
 #include "sevent/base/Logger.h"
 #include "sevent/net/Channel.h"
 #include "sevent/net/EventLoop.h"
 #include "sevent/net/SocketsOps.h"
 #include <assert.h>
+#ifndef _WIN32
 #include <sys/epoll.h>
 #include <unistd.h>
+#else
+#include "sevent/net/poller/wepoll/wepoll.h"
+#endif
 
 using namespace std;
 using namespace sevent;
@@ -18,12 +21,21 @@ const int normal = 1;   //在监听列表和channelMap
 const int removed = 2;  //不在监听列表,在channelMap
 } // namespace
 
+#ifndef _WIN32
 EpollPoller::EpollPoller()
     : epfd(::epoll_create1(EPOLL_CLOEXEC)), eventList(initSize) {
     if (epfd < 0)
         LOG_SYSFATAL << "EpollPoller::EpollPoller() - epoll_create1 err";
 }
 EpollPoller::~EpollPoller() { sockets::close(epfd); };
+#else
+EpollPoller::EpollPoller()
+    : epfd(::epoll_create1(0)), eventList(initSize) {
+    if (epfd == nullptr)
+        LOG_SYSFATAL << "EpollPoller::EpollPoller() - epoll_create1 err";
+}
+EpollPoller::~EpollPoller() { ::epoll_close(epfd); };
+#endif
 
 int EpollPoller::doPoll(int timeout) {
     int count = ::epoll_wait(epfd, &*eventList.begin(),
@@ -96,5 +108,3 @@ void EpollPoller::fillActiveChannels(int count) {
     if (static_cast<size_t>(count) == eventList.size())
         eventList.resize(eventList.size() * 2);
 }
-
-#endif

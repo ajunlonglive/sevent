@@ -5,9 +5,8 @@
 namespace sevent {
 using TcpConnectionPtr = sevent::net::TcpConnection::ptr;
 namespace net {
-class TcpHandler {
+class TcpHandler : noncopyable {
 public:
-    // TODO 简化
     // for override
     virtual void onConnection(const TcpConnection::ptr &conn) {}
     virtual void onMessage(const TcpConnection::ptr &conn, Buffer *buf) {}

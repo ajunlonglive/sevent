@@ -5,6 +5,7 @@
 #include <thread>
 #ifndef _WIN32
 #include <unistd.h>
+#include <strings.h>
 #else
 #include <winsock2.h>
 #include <processthreadsapi.h>
@@ -79,6 +80,14 @@ const char *strerror_tl(int errnum) {
     chomp(msgBuf);
     msgString = string(msgBuf);// + "(errno=" + to_string(errnum) + ")";
     return msgString.c_str();
+    #endif
+}
+
+int stricmp(const char *l, const char *r) {
+    #ifndef _WIN32
+    return strcasecmp(l, r);
+    #else
+    return _stricmp(l, r);
     #endif
 }
     

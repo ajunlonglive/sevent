@@ -10,7 +10,6 @@ using namespace sevent::net;
 
 EventLoopWorkers::EventLoopWorkers(EventLoop *baseloop, int threadNums) 
     : baseloop(baseloop), threadNums(threadNums), nextIndex(0) {
-        //TODO CPU数
 }
 
 EventLoopWorkers::~EventLoopWorkers() {

@@ -21,7 +21,9 @@ TcpServer::TcpServer(EventLoop *loop, uint16_t port, int threadNums)
 TcpServer::TcpServer(EventLoop *loop, const InetAddress &listenAddr, int threadNums)
     : ownerLoop(loop), tcpHandler(nullptr), nextId(1), started(false),
       acceptor(createAccepptor(loop, listenAddr)),
-      workers(new EventLoopWorkers(loop, threadNums)) {}
+      workers(new EventLoopWorkers(loop, threadNums)) {
+    // threadNums = std::thread::hardware_concurrency();
+}
 
 TcpServer::~TcpServer() {
     ownerLoop->assertInOwnerThread();

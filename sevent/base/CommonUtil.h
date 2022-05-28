@@ -13,6 +13,7 @@ namespace CommonUtil{
     // for windows
     void chomp(char *s);
     const char *strerror_tl(int errnum);
+    int stricmp(const char *l, const char *r);
 
 } // namespace CommonUtil
 } // namespace sevent
