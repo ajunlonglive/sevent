@@ -17,9 +17,11 @@ using namespace sevent::net::http;
 class HttpResponseHandler : public PipelineHandler {
 public:
     bool onMessage(const TcpConnection::ptr &conn, std::any &msg) override {
-        HttpResponse &response = any_cast<HttpResponse &>(msg);
-        printf("====== recv-response ======\n%s", response.toString().c_str());
-        printf("====== recv-response ======\n");
+        vector<HttpResponse> &responseList = any_cast<vector<HttpResponse> &>(msg);
+        for (HttpResponse &response : responseList) {
+            printf("====== recv-response: ======\n%s", response.toString().c_str());
+            printf("======    recv-end    ======\n");
+        }
         return true;
     }
 private:

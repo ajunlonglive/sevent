@@ -26,6 +26,10 @@ const char *buf2 = "POST /two_chunks_mult_zero_end HTTP/1.1\r\n"
                    "6\r\n world\r\n"
                    "000\r\n"
                    "\r\n";
+const char *buf3 = "UNLINK /images/my_dog.jpg HTTP/1.1\r\n"
+                   "Host: example.com\r\n"
+                   "Link: <http://example.com/profiles/sally>; rel=\"tag\"\r\n"
+                   "\r\n";
 
 class MyHandler : public TcpHandler {
 public:
@@ -35,6 +39,7 @@ private:
                  << conn->getLocalAddr().toStringIpPort();
         conn->send(buf1);
         conn->send(buf2);
+        conn->send(buf3);
         this_thread::sleep_for(3s);
         cout<<"close"<<endl;
         conn->shutdown();

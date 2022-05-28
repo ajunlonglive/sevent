@@ -6,7 +6,12 @@ using namespace sevent;
 using namespace sevent::net;
 using namespace sevent::net::http;
 
-HttpResponse::HttpResponse(shared_ptr<HttpParser> p) : parser(std::move(p)) {}
+HttpResponse::HttpResponse()
+    : parser(new HttpParser(false)), httpVersion(HttpVersion::HTTP_1_1),
+      httpStatus(HttpStatus::HTTP_STATUS_OK) {}
+HttpResponse::HttpResponse(shared_ptr<HttpParser> &&p) : parser(std::move(p)) {}
+HttpResponse::HttpResponse(HttpVersion version, HttpStatus status)
+    : parser(new HttpParser(false)), httpVersion(version), httpStatus(status) {}
 
 int HttpResponse::isKeepAlive() { return http_should_keep_alive(parser->getParser()); }
 unsigned short HttpResponse::httpMajor() const { return parser->httpMajor(); }
@@ -31,6 +36,33 @@ std::string HttpResponse::toString() {
     for (auto &item : parser->getHeaders()) {
         msg += item.first + ": " + item.second + "\r\n";
     }
+    msg += "\r\n";
     msg += parser->getBody();
     return msg;
+}
+
+std::string HttpResponse::buildString() {
+    string msg;
+    msg.reserve(1024);
+    msg += http::versionToString(httpVersion);
+    msg += " ";
+    msg += http::statusdToString(httpStatus);
+    msg += "\r\n";
+
+    for (auto &item : parser->getHeaders()) {
+        msg += item.first + ": " + item.second + "\r\n";
+    }
+    if (parser->getBody().size() != 0) {
+        msg += "Content-Length: " + to_string(parser->getBody().size()) + "\r\n";
+    }
+    msg += "\r\n";
+    msg += parser->getBody();
+    return msg;
+}
+
+void HttpResponse::setBody(std::string body) {
+    parser->setBody(std::move(body));
+}
+void HttpResponse::setHeader(const std::string &key, std::string val) {
+    parser->setHeader(key, std::move(val));
 }

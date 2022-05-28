@@ -8,41 +8,13 @@ using namespace sevent;
 using namespace sevent::net;
 using namespace sevent::net::http;
 
-bool HttpRequestCodec::onConnection(const TcpConnection::ptr &conn, std::any &msg) {
-    conn->setContext("HttpParser", HttpParser(true));
-    return true;
-}
+HttpRequestCodec::HttpRequestCodec() : HttpCodec(true) {}
 
-bool HttpRequestCodec::onMessage(const TcpConnection::ptr &conn, std::any &msg) {
-    // Buffer *buf = conn->getInputBuf();
-    Buffer *buf;
-    try {
-        buf = any_cast<Buffer *>(msg);
-        if (buf == nullptr) {
-            LOG_ERROR << "HttpRequestCodec::onMessage(), Buffer* = nullptr";
-            return false;
-        }
-    } catch (std::bad_any_cast&) {
-        LOG_FATAL << "HttpRequestCodec::onMessage() - bad_any_cast, msg should be Buffer*";
+void HttpRequestCodec::handleMessage(vector<unique_ptr<HttpParser>> &&parserList, std::any &msg) {
+    vector<HttpRequest> responseList;
+    for (unique_ptr<HttpParser> &item : parserList) {
+        // responseList.push_back(HttpRequest(std::move(item)));
+        responseList.emplace_back(std::move(item));
     }
-    HttpParser *parser = any_cast<HttpParser>(&(conn->getContext("HttpParser")));
-    // TODO 现在每次处理并传递1条
-    size_t parsed= parser->execute(buf->peek(), buf->readableBytes());
-    if (parser->isComplete()) {
-        buf->retrieve(parsed);
-        shared_ptr<HttpParser> p(new HttpParser(true));
-        p->swap(*parser);
-        HttpRequest req(std::move(p));
-        msg = std::move(req); // 传递request
-    } else {
-        if (parser->getErr() != 0){
-            LOG_ERROR << "HttpRequestCodec::onMessage() - parser err, "
-                    << parser->getErrName() << ", " << parser->getErrDesc();
-            conn->shutdown();
-        }
-        // incomplete
-        parser->reset();
-        return false;
-    }
-    return true;
+    msg = std::move(responseList);
 }

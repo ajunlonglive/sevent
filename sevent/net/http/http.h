@@ -123,8 +123,12 @@ enum class HttpStatus {
     #undef XX
 };
 
+enum class HttpVersion { HTTP_1_0, HTTP_1_1, HTTP_2_0, HTTP_SIZE };
+
 const char *methodToString(http::HttpMethod v);
 const char *statusdToString(http::HttpStatus v);
+const char *versionToString(http::HttpVersion v);
+
 
 } // namespace http
 } // namespace net

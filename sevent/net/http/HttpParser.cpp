@@ -124,6 +124,9 @@ int HttpParser::on_message_complete(http_parser *p) {
 }
 int HttpParser::on_chunk_header(http_parser *) { return 0; }
 int HttpParser::on_chunk_complete(http_parser *) { return 0; }
+void HttpParser::http_parser_set_max_header_size(uint32_t size) {
+    http_parser_set_max_header_size(size);
+}
 
 void HttpParser::parseQueryParam(const string &str) {
     // p=1&s=2, FIXME: "a&d=1" -> {'a&d', '1'}
@@ -190,6 +193,11 @@ const string &HttpParser::getFragment() const {
 }
 const string &HttpParser::getUserInfo() const {
     return request ? urlFields[UF_USERINFO] : nullStr;
+}
+
+void HttpParser::setBody(std::string val) { body = std::move(val); }
+void HttpParser::setHeader(const std::string &key, std::string val) {
+    headers[key] = std::move(val);
 }
 
 void HttpParser::reset() {

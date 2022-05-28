@@ -13,6 +13,7 @@
 namespace sevent {
 namespace net {
 namespace http {
+// 参考: https://github.com/nodejs/http-parser
 class HttpParser {
 public:
     explicit HttpParser(bool isrequest = true);
@@ -49,6 +50,9 @@ public:
     std::string &getHeader(const std::string &key);
     std::string &getParam(const std::string &key);
 
+    void setBody(std::string val);
+    void setHeader(const std::string &key, std::string val);
+
     // 成功:0, 失败:非0
     unsigned int getErr();
     const char *getErrName();
@@ -68,6 +72,7 @@ public:
     int on_message_complete(http_parser *);
     int on_chunk_header(http_parser *);
     int on_chunk_complete(http_parser *); // TODO
+    static void http_parser_set_max_header_size(uint32_t size);
 
 public:
     struct CaseInsensitiveLess {

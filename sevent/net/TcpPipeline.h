@@ -8,6 +8,7 @@
 namespace sevent {
 namespace net {
 
+class TcpPipeline;
 // 消息沿着调用链, 向前/向后传递
 class PipelineHandler : noncopyable {
 public:
@@ -16,6 +17,8 @@ public:
     PipelineHandler *nextHandler() { return next; }
     void setPrevHandler(PipelineHandler *prevHandler) { prev = prevHandler; }
     void setNextHandler(PipelineHandler *nextHandler) { next = nextHandler; }
+    void setPipeLine(TcpPipeline *pline) { pipeline = pline; }
+    TcpPipeline *getPipeLine() { return pipeline; }
 
     void onError(const TcpConnection::ptr &conn, std::any &msg);
     // 从当前handler, 沿着调用链, 向前传递(handleWrite)
@@ -34,11 +37,13 @@ public:
 private:
     PipelineHandler *prev;
     PipelineHandler *next;
+    TcpPipeline *pipeline;
 };
 
 class TcpPipeline : public TcpHandler {
 public:
     TcpPipeline &addLast(PipelineHandler *handler);
+    std::list<PipelineHandler *> *getHandlers() { return &handlers; }
     void onConnection(const TcpConnection::ptr &conn) override;
     void onMessage(const TcpConnection::ptr &conn, Buffer *buf) override;
     void onClose(const TcpConnection::ptr &conn) override;
@@ -47,10 +52,11 @@ public:
 public:
     using handlerFunc1 = bool (PipelineHandler::*)(const TcpConnection::ptr &conn);
     using handlerFunc2 = bool (PipelineHandler::*)(const TcpConnection::ptr &conn, std::any &msg);
-    // 从指定handler向后传播
+    // 从指定handler向后传递
     static void invoke(handlerFunc1, const TcpConnection::ptr &, PipelineHandler *);
     static void invoke(handlerFunc2, const TcpConnection::ptr &, std::any &, PipelineHandler *);
 private:
+    // 从开始向后传递
     void invoke(handlerFunc1 func, const TcpConnection::ptr &conn);
     void invoke(handlerFunc2 func, const TcpConnection::ptr &conn, std::any &msg);
 

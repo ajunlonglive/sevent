@@ -6,12 +6,17 @@ using namespace sevent;
 using namespace sevent::net;
 
 TcpPipeline &TcpPipeline::addLast(PipelineHandler *next) {
+    if (next == nullptr) {
+        LOG_ERROR << "TcpPipeline::addLast() - PipelineHandler is nullptr";
+        return *this;
+    }
     PipelineHandler *prev = handlers.back();
     if (prev) {
         prev->setNextHandler(next);
         next->setPrevHandler(prev);
     }
     handlers.push_back(next);
+    next->setPipeLine(this);
     return *this;
 }
 
@@ -65,7 +70,7 @@ void TcpPipeline::invoke(handlerFunc2 func, const TcpConnection::ptr &conn, std:
     }  
 }
 
-PipelineHandler::PipelineHandler() : prev(nullptr), next(nullptr) {}
+PipelineHandler::PipelineHandler() : prev(nullptr), next(nullptr), pipeline(nullptr) {}
 
 void PipelineHandler::onError(const TcpConnection::ptr &conn, std::any &msg) {
     TcpPipeline::invoke(&PipelineHandler::handleError, conn, msg, this);

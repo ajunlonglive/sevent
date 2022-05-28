@@ -34,6 +34,7 @@ private:
                  << conn->getLocalAddr().toStringIpPort();
         cout<<"send buf"<<endl;
         conn->send(buf);
+        conn->send(buf);
         this_thread::sleep_for(3s);
         cout<<"send 404"<<endl;
         conn->send("HTTP/1.1 404 Not Found\r\n\r\n");
