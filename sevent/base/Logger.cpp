@@ -43,15 +43,14 @@ void setUTCOffset(time_t gmtOffsetSecond) {
 /********************************************************************
  *                              Logger
  * ******************************************************************/
-
-Logger::Logger(Level level, Processor_ptr &&processor, Output_ptr &&output)
-    : level(level), processor(std::move(processor)), output(std::move(output)) {
+Logger::Level Logger::level = initLevel();
+Logger::Logger(Processor_ptr &&processor, Output_ptr &&output)
+    : processor(std::move(processor)), output(std::move(output)) {
     this->output->init();
 }
 //构造默认实例
 Logger &Logger::instance() {
-    static Logger logger(Logger::initLevel(),
-                         unique_ptr<LogEventProcessor>(new DefaultLogProcessor),
+    static Logger logger(unique_ptr<LogEventProcessor>(new DefaultLogProcessor),
                          unique_ptr<LogAppender>(new LogAppender));
     return logger;
 }

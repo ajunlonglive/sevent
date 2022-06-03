@@ -7,8 +7,7 @@ using namespace sevent::net;
 using namespace sevent::net::http;
 
 HttpResponse::HttpResponse()
-    : parser(new HttpParser(false)), httpVersion(HttpVersion::HTTP_1_1),
-      httpStatus(HttpStatus::HTTP_STATUS_OK) {}
+    : HttpResponse(HttpVersion::HTTP_1_1, HttpStatus::HTTP_STATUS_OK) {}
 HttpResponse::HttpResponse(shared_ptr<HttpParser> &&p) : parser(std::move(p)) {}
 HttpResponse::HttpResponse(HttpVersion version, HttpStatus status)
     : parser(new HttpParser(false)), httpVersion(version), httpStatus(status) {}
@@ -46,7 +45,7 @@ std::string HttpResponse::buildString() {
     msg.reserve(1024);
     msg += http::versionToString(httpVersion);
     msg += " ";
-    msg += http::statusdToString(httpStatus);
+    msg += to_string(static_cast<int>(httpStatus)) + " " +http::statusdToString(httpStatus);
     msg += "\r\n";
 
     for (auto &item : parser->getHeaders()) {

@@ -38,7 +38,7 @@ ssize_t Buffer::readFd(socket_t fd) {
         if (static_cast<size_t>(n) <= writeable) {
             writeIndex += n;
             if (writableBytes() == 0)
-                ensureSpace(static_cast<size_t>(n)); // 扩容
+                ensureSpace(static_cast<size_t>(buffer.size())); // 扩容
         } 
         #endif
     }
@@ -63,6 +63,13 @@ void Buffer::retrieveAll() {
     readIndex = prepends;
     writeIndex = prepends;
 
+}
+void Buffer::advance(size_t len) {
+    if (len < writableBytes()) {
+        writeIndex += len;
+    } else {
+        writeIndex = buffer.size();
+    }
 }
 void Buffer::swap(Buffer &buf) {
     buffer.swap(buf.buffer);

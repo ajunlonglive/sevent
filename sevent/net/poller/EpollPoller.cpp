@@ -91,11 +91,11 @@ void EpollPoller::update(int op, Channel *channel) {
         if (op == EPOLL_CTL_DEL)
             LOG_SYSERR << "EPOLL_CTL_DEL fd = " << fd;
         else if (op == EPOLL_CTL_ADD)
-            LOG_SYSFATAL << "EPOLL_CTL_ADD fd = " << fd;
+            LOG_SYSERR << "EPOLL_CTL_ADD fd = " << fd;
         else if (op == EPOLL_CTL_MOD)
-            LOG_SYSFATAL << "EPOLL_CTL_MOD fd = " << fd;
+            LOG_SYSERR << "EPOLL_CTL_MOD fd = " << fd;
         else
-            LOG_SYSFATAL << "UNKONW fd = " << fd;
+            LOG_SYSERR << "UNKONW fd = " << fd;
     }
 }
 

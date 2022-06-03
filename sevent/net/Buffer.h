@@ -20,6 +20,7 @@ public:
     size_t readableBytes() const { return writeIndex - readIndex; }
     size_t writableBytes() const { return buffer.size() - writeIndex; }
     size_t prependableBytes() const { return readIndex; }
+    size_t size() const { return buffer.size(); }
 
     const char *peek() const { return begin() + readIndex; }
     void append(const std::string &str);
@@ -31,6 +32,8 @@ public:
     void retrieveUntil(const char *end);
     // 复原readIndex和writeIndex
     void retrieveAll();
+    // 手动移动writeIndex;
+    void advance(size_t len);
     void swap(Buffer &buf);
     void shrinkToFit();
 
@@ -67,12 +70,12 @@ public:
 
     char *writePos() { return begin() + writeIndex; }
     const char *readPos() const { return begin() + readIndex; }
+    void ensureSpace(size_t len);
 private:
     const char *begin() const { return &*buffer.begin(); }
     char *begin() { return &*buffer.begin(); }
     char *readPos() { return begin() + readIndex; }
     const char *writePos() const { return begin() + writeIndex; }
-    void ensureSpace(size_t len);
 
 private:
     std::vector<char> buffer;

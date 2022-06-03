@@ -28,8 +28,8 @@ public:
     void msgBefore(LogEvent &logEv);
     void msgAfter(LogEvent &logEv);
     void log(const char *file, int line, Logger::Level level, const std::string &msg); // TEST
-    void setLogLevel(Level level) { this->level = level; }
-    Level getLogLevel() { return this->level; }
+    static void setLogLevel(Level l) { level = l; }
+    static Level getLogLevel() { return level; }
     void setLogEventProcessor(std::unique_ptr<LogEventProcessor> &processor);
     void setLogAppender(std::unique_ptr<LogAppender> &output);
     // TEST
@@ -39,12 +39,12 @@ public:
 private:
     using Processor_ptr = std::unique_ptr<LogEventProcessor>;
     using Output_ptr = std::unique_ptr<LogAppender>;
-    Logger(Level level, Processor_ptr &&processor, Output_ptr &&output);
+    Logger(Processor_ptr &&processor, Output_ptr &&output);
     // 通过环境变量初始化SEVENT_LOG_TRACE:level 参考muduo:getenv("MUDUO_LOG_TRACE")
     static Level initLevel();
 
 private:
-    Level level;
+    static Level level;
     std::unique_ptr<LogEventProcessor> processor;
     std::unique_ptr<LogAppender> output;
 };

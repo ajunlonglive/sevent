@@ -16,7 +16,7 @@ using namespace sevent::net;
 TcpConnection::TcpConnection(EventLoop *loop, socket_t sockfd, int64_t connId,
                              const InetAddress &localAddr,
                              const InetAddress &peerAddr)
-    : Channel(sockfd, loop),isRead(true), id(connId), state(connecting),
+    : Channel(sockfd, loop),isRead(true), isWrite(false), id(connId), state(connecting),
       localAddr(localAddr), peerAddr(peerAddr), hightWaterMark(64 * 1024 * 1024) {
     
 }
@@ -81,6 +81,22 @@ void TcpConnection::send(Buffer &&buf) {
     }    
 }
 
+void TcpConnection::dealErr(bool *isErr) {
+    #ifndef _WIN32
+    if (sockets::getErrno() != EAGAIN) {
+        LOG_SYSERR << "TcpConnection::send - failed";
+        if (sockets::getErrno() == EPIPE || sockets::getErrno() == ECONNRESET)
+            *isErr = true;
+    }
+    #else
+    if (sockets::getErrno() != WSAEWOULDBLOCK) {
+        LOG_SYSERR << "TcpConnection::send - failed";
+        if (sockets::getErrno() == WSAECONNRESET)
+            *isErr = true;
+    }
+    #endif
+}
+
 void TcpConnection::sendInLoopBuf(Buffer &buf) {
     ownerLoop->assertInOwnerThread();
     if (state == disconnected) {
@@ -102,19 +118,7 @@ void TcpConnection::sendInLoopBuf(Buffer &buf) {
                                                  shared_from_this()));
         } else {
             n = 0;
-            #ifndef _WIN32
-            if (sockets::getErrno() != EAGAIN) {
-                LOG_SYSERR << "TcpConnection::sendInLoop() - failed";
-                if (sockets::getErrno() == EPIPE || sockets::getErrno() == ECONNRESET)
-                    isErr = true;
-            }
-            #else
-            if (sockets::getErrno() != WSAEWOULDBLOCK) {
-                LOG_SYSERR << "TcpConnection::sendInLoop() - failed";
-                if (sockets::getErrno() == WSAECONNRESET)
-                    isErr = true;
-            }
-            #endif
+            dealErr(&isErr);
         }
     }
 
@@ -163,19 +167,7 @@ void TcpConnection::sendInLoop(const void *data, size_t len) {
                                                  shared_from_this()));
         } else {
             n = 0;
-            #ifndef _WIN32
-            if (sockets::getErrno() != EAGAIN) {
-                LOG_SYSERR << "TcpConnection::sendInLoop() - failed";
-                if (sockets::getErrno() == EPIPE || sockets::getErrno() == ECONNRESET)
-                    isErr = true;
-            }
-            #else
-            if (sockets::getErrno() != WSAEWOULDBLOCK) {
-                LOG_SYSERR << "TcpConnection::sendInLoop() - failed";
-                if (sockets::getErrno() == WSAECONNRESET)
-                    isErr = true;
-            }
-            #endif
+            dealErr(&isErr);
         }
     }
 
@@ -190,6 +182,44 @@ void TcpConnection::sendInLoop(const void *data, size_t len) {
             Channel::enableWriteEvent();
         LOG_TRACE << "TcpConnection::sendInLoop(), fd = "<< fd <<" len = " << len << ", write = " 
                   << n << ", remain = " << remain << ", buf = " << (oldLen + remain);
+    }
+}
+
+void TcpConnection::sendOutputBuf() {
+    if (state == connected) {
+        if (ownerLoop->isInOwnerThread()) {
+            sendOutputBufInLoop();
+        } else {
+            ownerLoop->queueInLoop(std::bind(
+                &TcpConnection::sendOutputBufInLoop, shared_from_this()));
+        }
+    }    
+}
+void TcpConnection::sendOutputBufInLoop() {
+    ownerLoop->assertInOwnerThread();
+    if (state == disconnected)
+        return;
+    ssize_t n = 0;
+    ssize_t remain = outputBuf.readableBytes();
+    bool isErr = false;
+    if (!Channel::isEnableWrite() && remain) {
+        n = outputBuf.writeFd(fd);
+        if (n >= 0) {
+            remain -= n;
+            if (remain == 0 && tcpHandler != nullptr)
+                ownerLoop->queueInLoop(std::bind(&TcpHandler::onWriteComplete,
+                                                 tcpHandler,
+                                                 shared_from_this()));
+        } else {
+            n = 0;
+            dealErr(&isErr);
+        }
+    }
+    if (!isErr && remain > 0) {
+        if (!Channel::isEnableWrite())
+            Channel::enableWriteEvent();
+        LOG_TRACE << "TcpConnection::sendOutputBufInLoop(), fd = " << fd
+                  << ", write = " << n << ", remain = " << remain;
     }
 }
 
@@ -338,13 +368,15 @@ void TcpConnection::forceCloseInLoop() {
 }
 
 void TcpConnection::enableRead() {
-    ownerLoop->runInLoop(std::bind(&TcpConnection::enableReadInLoop, this));
+    ownerLoop->runInLoop(std::bind(&TcpConnection::enableReadInLoop, shared_from_this()));
 }
 void TcpConnection::disableRead() {
-    ownerLoop->runInLoop(std::bind(&TcpConnection::disableReadInLoop, this));
+    ownerLoop->runInLoop(std::bind(&TcpConnection::disableReadInLoop, shared_from_this()));
 }
 void TcpConnection::enableReadInLoop() {
     ownerLoop->assertInOwnerThread();
+    if (fd < 0)
+        return;
     if (!isRead || !Channel::isEnableRead()) {
         Channel::enableReadEvent();
         isRead = true;
@@ -352,9 +384,35 @@ void TcpConnection::enableReadInLoop() {
 }
 void TcpConnection::disableReadInLoop() {
     ownerLoop->assertInOwnerThread();
+    if (fd < 0)
+        return;
     if (isRead || Channel::isEnableRead()) {
         Channel::disableReadEvent();
         isRead = false;
+    }
+}
+void TcpConnection::enableWrite() {
+    ownerLoop->runInLoop(std::bind(&TcpConnection::enableWriteInLoop, shared_from_this()));
+}
+void TcpConnection::disableWrite() {
+    ownerLoop->runInLoop(std::bind(&TcpConnection::disableWriteInLoop, shared_from_this()));
+}
+void TcpConnection::enableWriteInLoop() {
+    ownerLoop->assertInOwnerThread();
+    if (fd < 0)
+        return;
+    if (!isWrite || !Channel::isEnableWrite()) {
+        Channel::enableWriteEvent();
+        isWrite = true;
+    }
+}
+void TcpConnection::disableWriteInLoop() {
+    ownerLoop->assertInOwnerThread();
+    if (fd < 0)
+        return;
+    if (isWrite || Channel::isEnableWrite()) {
+        Channel::disableWriteEvent();
+        isWrite = false;
     }
 }
 void TcpConnection::setTcpNoDelay(bool on) { sockets::setTcpNoDelay(fd, on); }

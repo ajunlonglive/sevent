@@ -21,16 +21,18 @@ public:
     unsigned short httpMinor() const;
     const std::string &getBody() const;
     const std::string &getHeader(const std::string &key) const;
+    // 深拷贝
+    HttpResponse duplicate(); 
 
     // 构建response
     void setHttpVersion(HttpVersion version) { httpVersion = version; }
     void setHttpStatus(HttpStatus status) { httpStatus = status; }
     void setBody(std::string body);
     void setHeader(const std::string &key, std::string val);
-    // FIXME 不完善
+    // void setKeepAlive(bool isKeepAlive) { keepAlive = isKeepAlive; }
+    // 构建response, FIXME 不完善
     std::string buildString();
 
-    HttpResponse duplicate(); // 深拷贝
     // for test
     std::string toString();
 

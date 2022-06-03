@@ -10,7 +10,7 @@ using namespace sevent::net::http;
 HttpCodec::HttpCodec(bool isReq) : isRequest(isReq) {}
 
 bool HttpCodec::onConnection(const TcpConnection::ptr &conn, std::any &msg) {
-    conn->setContext("HttpParser", HttpParser(isRequest));
+    conn->setContext("HttpParser", make_any<HttpParser>(isRequest));
     return true;
 }
 

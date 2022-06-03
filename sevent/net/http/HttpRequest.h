@@ -30,7 +30,8 @@ public:
     const std::string &getBody() const;
     const std::string &getHeader(const std::string &key) const;
     const std::string &getParam(const std::string &key) const;
-    HttpRequest duplicate(); // 深拷贝
+    // 深拷贝
+    HttpRequest duplicate();
 
     // 构建request
     void setHttpVersion(HttpVersion version) { httpVersion = version; }
@@ -38,7 +39,7 @@ public:
     void setBody(std::string body);
     void setHeader(const std::string &key, std::string val);
     void setUrl(std::string val);
-    // FIXME 不完善
+    // 构建request, FIXME 不完善
     std::string buildString(); 
 
     // for test

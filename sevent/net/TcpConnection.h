@@ -39,12 +39,15 @@ public:
     void send(Buffer *buf);
     void send(Buffer &buf); 
     void send(Buffer &&buf); // Buffer::swap
+    void sendOutputBuf(); // 发送outputBuf的数据
     // void send(FILE *fp); // TODO sendfile
     void shutdown(); // 设置状态disconnecting, 若outputBuf存在数据, 则发送完毕后, 才shutdown(WR)
     void forceClose(); // 调用close, 有可能会丢失数据
     void forceClose(int64_t delayMs); // 延迟ms后, forceClose
     void enableRead();
     void disableRead();
+    void enableWrite(); // 可以通过enableWrite, 发送outBuf里面的数据
+    void disableWrite();
     bool isReading() const { return isRead; }
     bool isConnected() const { return state & connected; }
 
@@ -81,10 +84,14 @@ private:
     void sendInLoop(const void *data, size_t len);
     void sendInLoopStr(const std::string &data);
     void sendInLoopBuf(Buffer &buf);
+    void sendOutputBufInLoop();
     void shutdownInLoop();
     void forceCloseInLoop();
     void enableReadInLoop();
     void disableReadInLoop();
+    void enableWriteInLoop();
+    void disableWriteInLoop();
+    void dealErr(bool *isErr);
     void tie() {}
     // for TcpServer
     friend class TcpServer;
@@ -97,6 +104,7 @@ private:
 
 private:
     bool isRead;
+    bool isWrite;
     int64_t id;
     State state;
     TcpConnectionHolder *tcpHolder;
