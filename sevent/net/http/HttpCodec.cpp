@@ -15,7 +15,6 @@ bool HttpCodec::onConnection(const TcpConnection::ptr &conn, std::any &msg) {
 }
 
 bool HttpCodec::onMessage(const TcpConnection::ptr &conn, std::any &msg) {
-    // Buffer *buf = conn->getInputBuf();
     Buffer *buf;
     try {
         buf = any_cast<Buffer *>(msg);

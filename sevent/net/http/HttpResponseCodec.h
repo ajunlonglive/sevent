@@ -7,6 +7,7 @@ namespace net {
 namespace http {
 
 // 接收response, 发送request(client)
+// msg =  vector<HttpResponse>
 class HttpResponseCodec : public HttpCodec {
 public:
     HttpResponseCodec();

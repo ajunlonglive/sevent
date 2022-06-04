@@ -48,8 +48,6 @@ bool SslCodec::onMessage(const TcpConnection::ptr &conn, std::any &msg) {
     Buffer *buf = convertBuf(msg);
     if (buf == nullptr)
         return false;
-    LOG_LF();
-    LOG_TRACE << "SslCodec::onMessage(), recv = " << buf->readableBytes();
     SslHandler &sslHandler = any_cast<SslHandler&>(conn->getContext("SslHandler"));
     SSL *ssl = sslHandler.getSSL();
     while (buf->readableBytes() > 0) {
@@ -58,7 +56,6 @@ bool SslCodec::onMessage(const TcpConnection::ptr &conn, std::any &msg) {
         if (status == SslHandler::SSL_WANT) {
             // handshake/renegotiation ?
             if (!SSL_is_init_finished(ssl)) {
-                LOG_TRACE << "SslCodec::onMessage() - SSL_is_init_finished is not finished";
                 Buffer tmpBuf;
                 sslHandler.bioRead(tmpBuf);
                 if (tmpBuf.readableBytes())
@@ -66,7 +63,6 @@ bool SslCodec::onMessage(const TcpConnection::ptr &conn, std::any &msg) {
                 return false;
             } else if (sslHandler.getConnStatus() == SslHandler::ConnectStatus::CONNECTING) {
                 // 握手完毕, 执行后续pipeLineHandler的onConnection
-                LOG_TRACE << "SslCodec::onMessage() - SSL_is_init_finished is finished";
                 sslHandler.setConnStatus(SslHandler::ConnectStatus::CONNECTED);
                 std::any &data = conn->getContext("ConnectionMsg");
                 TcpPipeline::invoke(&PipelineHandler::onConnection, conn, data, this->nextHandler());
@@ -82,7 +78,6 @@ bool SslCodec::onMessage(const TcpConnection::ptr &conn, std::any &msg) {
     Buffer *decryptBuf = sslHandler.getDecrypt();
     LOG_TRACE << "SslCodec::onMessage(), remain = "
               << buf->readableBytes() << ", decrypt = " << decryptBuf->readableBytes();
-    LOG_LF();
     if (decryptBuf->readableBytes() > 0) {
         // decryptBuf->swap(*buf);
         // return true;
@@ -97,9 +92,8 @@ bool SslCodec::handleWrite(const TcpConnection::ptr &conn, std::any &msg, size_t
     Buffer *buf = convertBuf(msg);
     if (buf == nullptr)
         return false;
-    LOG_LF();
-    LOG_TRACE << "SslCodec::handleWrite(), ready to write = " << buf->readableBytes();
     SslHandler &sslHandler = any_cast<SslHandler&>(conn->getContext("SslHandler"));
+    // LOG_TRACE << "SslCodec::handleWrite(), read to write = " << buf->readableBytes();
     SSL *ssl = sslHandler.getSSL();
     SslHandler::Status status = sslHandler.encrypt(*buf);
     if (status == SslHandler::SSL_WANT) {
@@ -117,9 +111,8 @@ bool SslCodec::handleWrite(const TcpConnection::ptr &conn, std::any &msg, size_t
     }
     // 传递msg
     Buffer *enCryptBuf = sslHandler.getEnCrypt();
-    LOG_TRACE << "SslCodec::handleWrite(), remain = " << buf->readableBytes()
+    LOG_TRACE << "SslCodec::handleWrite(), before = " << buf->readableBytes()
               << ", encrypt = " << enCryptBuf->readableBytes();
-    LOG_LF();
-    enCryptBuf->swap(*buf);
+    msg = enCryptBuf;
     return true;
 }

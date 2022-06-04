@@ -1,0 +1,8 @@
+add_executable(SslClientCodec_test SslClientCodec_test.cpp)
+target_link_libraries(SslClientCodec_test sevent_net)
+
+add_executable(SslHandler_test SslHandler_test.cpp)
+target_link_libraries(SslHandler_test sevent_net)
+
+add_executable(SslServerCodec_test SslServerCodec_test.cpp)
+target_link_libraries(SslServerCodec_test sevent_net)

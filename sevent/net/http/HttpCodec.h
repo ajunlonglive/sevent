@@ -13,7 +13,7 @@ public:
     bool onConnection(const TcpConnection::ptr &conn, std::any &msg) override;
     bool onMessage(const TcpConnection::ptr &conn, std::any &msg) override;
     using ParserList = std::vector<std::unique_ptr<HttpParser>>;
-    // 根据HttpParser(List), 生成HttpRequest或HttpResponse(List), 并且修改msg
+    // 根据HttpParser列表, 生成HttpRequest或HttpResponse列表, 并且修改msg
     virtual void handleMessage(ParserList &&parserList, std::any &msg) = 0;
 
 private:

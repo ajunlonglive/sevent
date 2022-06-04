@@ -160,19 +160,16 @@ SslHandler::Status SslHandler::getSslStatus(int ret) {
     int code = SSL_get_error(ssl, ret);
     switch (code) {
         case SSL_ERROR_NONE:
-            LOG_TRACE << "SSL_ERROR_NONE";
             return SSL_OK;
         case SSL_ERROR_WANT_WRITE:
-            LOG_TRACE << "SSL_ERROR_WANT_WRITE";
             return SSL_WANT;
         case SSL_ERROR_WANT_READ:
-            LOG_TRACE << "SSL_ERROR_WANT_READ";
             return SSL_WANT;
         case SSL_ERROR_ZERO_RETURN:
-            LOG_TRACE << "SSL_ERROR_ZERO_RETURN";
+            LOG_TRACE << "SslHandler::getSslStatus() - SSL_ERROR_ZERO_RETURN";
             return SSL_CLOSE;
         default:
-            LOG_ERROR << "SSL_ERROR_FAILED, code = " << code;
+            LOG_ERROR << "SslHandler::getSslStatus() - SSL_ERROR_FAILED, code = " << code;
         return SSL_FAIL;
     }
 }
@@ -195,7 +192,7 @@ int SslHandler::bioRead(Buffer &buf) {
             buf.advance(n);
             if (buf.writableBytes() == 0)
                 buf.ensureSpace(buf.size());
-            LOG_TRACE << "SslHandler::bioRead(), n = " << n << ", count = " << count;
+            // LOG_TRACE << "SslHandler::bioRead(), n = " << n << ", count = " << count;
         } else {
             // if (!BIO_should_retry(wbio))
             //     LOG_TRACE << "SslHandler::bioRead() - err, n = " << n << ", count = " << count;
@@ -207,7 +204,7 @@ int SslHandler::bioRead(Buffer &buf) {
 int SslHandler::bioWrite(const Buffer &buf) {
     // >0, 成功写入字节数; -1, 没有成功写入; -2, bio不支持该操作; 0, bio=nullptr或dlen<=0
     int n = BIO_write(rbio, buf.readPos(), static_cast<int>(buf.readableBytes()));
-    LOG_TRACE << "SslHandler::bioWrite(), n = " << n << ", count = " << buf.readableBytes();
+    // LOG_TRACE << "SslHandler::bioWrite(), n = " << n << ", count = " << buf.readableBytes();
     return n;
 }
 int SslHandler::sslRead(Buffer &buf) {
@@ -220,7 +217,7 @@ int SslHandler::sslRead(Buffer &buf) {
             buf.advance(n);
             if (buf.writableBytes() == 0)
                 buf.ensureSpace(buf.size());
-            LOG_TRACE << "SslHandler::sslRead() , n = " << n << ", count = " << count;
+            // LOG_TRACE << "SslHandler::sslRead() , n = " << n << ", count = " << count;
         } else {
             // LOG_TRACE << "SSL_read() - err, n = " << n << ", count = " << count;
         }
@@ -230,7 +227,7 @@ int SslHandler::sslRead(Buffer &buf) {
 
 int SslHandler::sslWrite(const Buffer &buf) {
     int n = SSL_write(ssl, buf.readPos(), static_cast<int>(buf.readableBytes()));
-    LOG_TRACE << "SslHandler::sslWrite() , n = " << n << ", count = " << buf.readableBytes();
+    // LOG_TRACE << "SslHandler::sslWrite() , n = " << n << ", count = " << buf.readableBytes();
     return n;
 }
 
@@ -240,7 +237,7 @@ SslHandler::Status SslHandler::encrypt(Buffer &inbuf, Buffer &outbuf) {
     if (ret > 0) {
         bioRead(outbuf);
     }
-    inbuf.retrieve(static_cast<size_t>(ret));
+    // inbuf.retrieve(static_cast<size_t>(ret)); // 发送时, 用户的inbuf
     Status status = getSslStatus(ret);
     return status;
 }
@@ -251,7 +248,7 @@ SslHandler::Status SslHandler::decrypt(Buffer &inbuf, Buffer &outbuf) {
         return SSL_FAIL;
     }
     // 管理inbuf和outbuf
-    inbuf.retrieve(static_cast<size_t>(n));
+    inbuf.retrieve(static_cast<size_t>(n)); // 接收时, 网络的inbuf
     ERR_clear_error();
     int ret = sslRead(outbuf);
     Status status = getSslStatus(ret);
