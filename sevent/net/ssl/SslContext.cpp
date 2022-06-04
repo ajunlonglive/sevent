@@ -1,7 +1,6 @@
 #include "sevent/net/ssl/SslContext.h"
 
 #include "sevent/base/Logger.h"
-#include "sevent/net/Buffer.h"
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 #include <thread>
@@ -15,9 +14,9 @@ namespace {
 thread_local char g_errBuf[256] = {0};
 }
 
-SslContext::SslContext() : context(createClientCtx()) {}
+SslContext::SslContext() : client(true), context(createClientCtx()) {}
 SslContext::SslContext(const std::string& certFile, const std::string& keyFile)
-    : context(createServerCtx()) {
+    : client(false), context(createServerCtx()) {
     initServerCertificate(certFile, keyFile);
 }
 
@@ -125,15 +124,15 @@ int SslContext::getSslErr(const SSL *ssl, int ret) {
 /********************************************************************
  *                              SslHandler
  * ******************************************************************/
-SslHandler::SslHandler(SSL_CTX *context, bool isClient)
-    : client(isClient), ssl(createSSL(context)), status(CONNECTING) {
+SslHandler::SslHandler(SslContext *context)
+    : ssl(createSSL(context)), status(CONNECTING) {
     rbio = BIO_new(BIO_s_mem());
     wbio = BIO_new(BIO_s_mem());
     SSL_set_bio(ssl, rbio, wbio);
 }
 
-SSL *SslHandler::createSSL(SSL_CTX *context) {
-    SSL *s = SSL_new(context);
+SSL *SslHandler::createSSL(SslContext *context) {
+    SSL *s = SSL_new(context->sslContext());
     if (s == nullptr) {
         LOG_FATAL << "SslHandler::createSSL() - SSL_new() failed";
     } else {
@@ -141,7 +140,7 @@ SSL *SslHandler::createSSL(SSL_CTX *context) {
             LOG_FATAL << "SslHandler::createSSL() - SSL_clear() failed";
             s = nullptr;
         } else {
-            if (client)
+            if (context->isClient())
                 SSL_set_connect_state(s);
             else
                 SSL_set_accept_state(s);
@@ -196,11 +195,11 @@ int SslHandler::bioRead(Buffer &buf) {
             buf.advance(n);
             if (buf.writableBytes() == 0)
                 buf.ensureSpace(buf.size());
+            LOG_TRACE << "SslHandler::bioRead(), n = " << n << ", count = " << count;
         } else {
             // if (!BIO_should_retry(wbio))
             //     LOG_TRACE << "SslHandler::bioRead() - err, n = " << n << ", count = " << count;
         }
-        LOG_TRACE << "SslHandler::bioRead(), n = " << n << ", count = " << count;
     } while (n > 0);
     return count > 0 ? count : n;
 }
@@ -221,10 +220,10 @@ int SslHandler::sslRead(Buffer &buf) {
             buf.advance(n);
             if (buf.writableBytes() == 0)
                 buf.ensureSpace(buf.size());
+            LOG_TRACE << "SslHandler::sslRead() , n = " << n << ", count = " << count;
         } else {
             // LOG_TRACE << "SSL_read() - err, n = " << n << ", count = " << count;
         }
-        LOG_TRACE << "SslHandler::sslRead() , n = " << n << ", count = " << count;
     } while (n > 0);
     return n;
 }
@@ -235,32 +234,41 @@ int SslHandler::sslWrite(const Buffer &buf) {
     return n;
 }
 
-int SslHandler::encrypted(const Buffer &inbuf, Buffer &outbuf) {
-    if (!SSL_is_init_finished(ssl)) {
-        LOG_TRACE << "SslHandler::encrypted() - SSL_is_init_finished = false";
-        return -1;
-    }
+SslHandler::Status SslHandler::encrypt(Buffer &inbuf, Buffer &outbuf) {
     ERR_clear_error();
     int ret = sslWrite(inbuf);
     if (ret > 0) {
         bioRead(outbuf);
     }
+    inbuf.retrieve(static_cast<size_t>(ret));
     Status status = getSslStatus(ret);
-    if (status == SSL_FAIL) {
-        LOG_ERROR << "SslClientCodec::encrypted() - failed";
-        return -2;
-    }
-    return ret;
+    return status;
 }
-SslHandler::Status SslHandler::decrypted(Buffer &inbuf, Buffer &outbuf) {
+SslHandler::Status SslHandler::decrypt(Buffer &inbuf, Buffer &outbuf) {
     int n = bioWrite(inbuf);
     if (n <= 0) {
-        LOG_TRACE << "SslHandler::decrypted() - bioWrite failed, ret = " << n;
+        LOG_ERROR << "SslHandler::decrypted() - bioWrite failed, ret = " << n;
         return SSL_FAIL;
     }
+    // 管理inbuf和outbuf
     inbuf.retrieve(static_cast<size_t>(n));
     ERR_clear_error();
     int ret = sslRead(outbuf);
     Status status = getSslStatus(ret);
     return status;
+}
+
+SslHandler::Status SslHandler::encrypt(Buffer &inbuf) {
+    size_t inBytes = inbuf.readableBytes();
+    size_t outBytes = enCryptData.writableBytes();
+    if (inBytes > outBytes)
+        enCryptData.ensureSpace(inBytes - outBytes);
+    return encrypt(inbuf, enCryptData);
+}
+SslHandler::Status SslHandler::decrypt(Buffer &inbuf) {
+    size_t inBytes = inbuf.readableBytes();
+    size_t outBytes = decryptData.writableBytes();
+    if (inBytes > outBytes)
+        decryptData.ensureSpace(inBytes - outBytes);
+    return decrypt(inbuf, decryptData);
 }

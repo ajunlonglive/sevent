@@ -2,20 +2,16 @@
 #define SEVENT_NET_SSLCONTEXT_H
 
 #include "sevent/base/noncopyable.h"
+#include "sevent/net/Buffer.h"
+#include <openssl/ssl.h>
 #include <atomic>
 #include <memory>
 #include <string>
-#include <openssl/ssl.h>
 
-extern "C" {
-// struct BIO;
-// struct SSL;
-// struct SSL_CTX;
-}
 
 namespace sevent {
 namespace net {
-class Buffer;
+
 // 一般来说一个clientContext就够用了(多个连接可以共用一个)
 class SslContext : noncopyable {
 public:
@@ -25,6 +21,7 @@ public:
     SslContext(const std::string& certFile, const std::string& keyFile);
     ~SslContext();
     SSL_CTX *sslContext() { return context; }
+    bool isClient() { return client; }
     static const char *getErrStr();
     static void clearErr();
     static int getSslErr(const SSL *ssl, int ret);
@@ -36,6 +33,7 @@ private:
     void initServerCertificate(const std::string& certFile, const std::string& keyFile);
 
 private:
+    const bool client;
     SSL_CTX *context;
     static std::atomic<bool> isInit;
 };
@@ -59,7 +57,7 @@ public:
     enum ConnectStatus {CONNECTING, CONNECTED, DISCONNECTING, DISCONNECTED};
     enum Status { SSL_OK, SSL_WANT, SSL_CLOSE, SSL_FAIL };
 public:
-    SslHandler(SSL_CTX *context, bool isClient);
+    SslHandler(SslContext *context);
     ~SslHandler();
 
     Status ssldoHandshake();
@@ -74,20 +72,26 @@ public:
     SSL *getSSL() { return ssl; }
     BIO *getRBio() { return rbio; }
     BIO *getWBio() { return wbio; }
+    Buffer *getEnCrypt() { return &enCryptData; }
+    Buffer *getDecrypt() { return &decryptData; }
 
-    int encrypted(const Buffer &inbuf, Buffer &outbuf);
-    Status decrypted(Buffer &inbuf, Buffer &outbuf);
+    Status encrypt(Buffer &inbuf);
+    Status decrypt(Buffer &inbuf);
+    Status encrypt(Buffer &inbuf, Buffer &outbuf);
+    Status decrypt(Buffer &inbuf, Buffer &outbuf);
     
     // void setSSL(SSL *s) { ssl = s; }
 
 private:
-    SSL *createSSL(SSL_CTX *context);
+    SSL *createSSL(SslContext *context);
 private:
-    bool client;
     SSL *ssl;
     BIO *rbio;
     BIO *wbio;
     ConnectStatus status;
+    // TODO initSize
+    Buffer enCryptData; // 保存要发送的已加密数据
+    Buffer decryptData; // 保存已接受的已解密数据
 };
 
 } // namespace net

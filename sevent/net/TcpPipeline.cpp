@@ -69,6 +69,9 @@ void TcpPipeline::invoke(handlerFunc2 func, const TcpConnection::ptr &conn, std:
         } while (isNext && handler);
     }  
 }
+void TcpPipeline::invoke(handlerFunc2 func, const TcpConnection::ptr &conn, std::any &&msg, PipelineHandler *handler) {
+    invoke(func, conn, msg, handler);
+}
 
 PipelineHandler::PipelineHandler() : prev(nullptr), next(nullptr), pipeline(nullptr) {}
 
@@ -87,12 +90,16 @@ void PipelineHandler::write(const TcpConnection::ptr &conn, std::any &msg, size_
         isNext = handler->handleWrite(conn, msg, size);
         handler = handler->prevHandler();
     } while (isNext && handler);
-    // 发送, 处理完后, msg类型只能为string/Buffer/const char*
+    // 发送, 处理完后, msg类型只能为string(*)/Buffer(*)/const char*
     if (isNext && msg.has_value()) {
         const type_info &t = msg.type();
         try{
             if (t == typeid(string)) {
                 conn->send(any_cast<string&>(msg));
+            } else if (t == typeid(string*)) {
+                conn->send(*any_cast<string*>(msg));
+            } else if (t == typeid(Buffer*)) {
+                conn->send(any_cast<Buffer*>(msg));
             } else if (t == typeid(Buffer)) {
                 conn->send(any_cast<Buffer&>(msg));
             } else if (t == typeid(const char*)) {

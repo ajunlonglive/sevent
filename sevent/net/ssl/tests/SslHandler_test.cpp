@@ -12,11 +12,12 @@ using namespace sevent;
 using namespace sevent::net;
 
 SslContext context;
-SslHandler sslHolder(context.sslContext(), true);
+SslHandler sslHolder(&context);
 SSL *ssl = sslHolder.getSSL();
 BIO *rbio = sslHolder.getRBio();
 BIO *wbio = sslHolder.getWBio();
 bool isRun = false;
+const char *requestStr = "GET / HTTP/1.1\r\n\r\n";
 
 enum Status { SSL_OK, SSL_WANT, SSL_CLOSE, SSL_FAIL };
 
@@ -50,7 +51,7 @@ int bioRead(Buffer &buf) {
             count += n;
             buf.advance(n);
             if (buf.writableBytes() == 0)
-                buf.ensureSpace(n);
+                buf.ensureSpace(buf.size());
         } else {
             if (!BIO_should_retry(wbio))
                 LOG_TRACE << "readBio() - err, n = " << n << ", count = " << count;
@@ -75,7 +76,7 @@ int sslRead(Buffer &buf) {
             count += n;
             buf.advance(n);
             if (buf.writableBytes() == 0)
-                buf.ensureSpace(n);
+                buf.ensureSpace(buf.size());
         } else {
             LOG_TRACE << "SSL_read() - err, n = " << n << ", count = " << count;
         }
@@ -157,7 +158,7 @@ public:
                 if (SSL_is_init_finished(ssl) && !isRun) {
                     LOG_TRACE << "\nonMessage() - finished";
                     Buffer b;
-                    b.append("GET / HTTP/1.1\r\n\r\n");
+                    b.append(requestStr);
                     write(conn, b);
                     isRun = true;
                 }
@@ -169,14 +170,13 @@ public:
                 return;
             }
         }
-        // if () // 若SSL_is_init_finished
         printf("%s\n", tmpBuf.peek());
     }
 private:
 
 };
 
-
+// 早期测试的实现, 握手完成后, 发送requestStr = "GET / HTTP/1.1"
 int main(int argc, char **argv){
     string ip = "127.0.0.1";
     uint16_t port = 12345;

@@ -55,6 +55,7 @@ public:
     // 从指定handler向后传递
     static void invoke(handlerFunc1, const TcpConnection::ptr &, PipelineHandler *);
     static void invoke(handlerFunc2, const TcpConnection::ptr &, std::any &, PipelineHandler *);
+    static void invoke(handlerFunc2, const TcpConnection::ptr &, std::any &&, PipelineHandler *);
 private:
     // 从开始向后传递
     void invoke(handlerFunc1 func, const TcpConnection::ptr &conn);
