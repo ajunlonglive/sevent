@@ -3,8 +3,8 @@
 clear="clear"
 if [[ $1 = $clear ]]
 then
-rm -rf ./build/* && cd ./build && cmake .. && make
+rm -rf ./build2/* && cd ./build2 && cmake .. && make
 exit
 fi
 
-cd ./build && cmake .. && make
+cd ./build2 && cmake .. && make

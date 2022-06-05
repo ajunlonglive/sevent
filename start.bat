@@ -1,0 +1,14 @@
+@echo off
+if "%1" == "clear" (
+    rmdir /s/q .\build
+)
+if not exist build mkdir build
+cd ./build && ^
+cmake .. ^
+    -G "MinGW Makefiles" ^
+    -DBUILD_EXAMPLES=OFF ^
+    -DBUILD_TESTS=OFF ^
+    -DBUILD_RELEASE=OFF ^
+    -DENABLE_OPENSSL=OFF ^
+    && ^
+make
