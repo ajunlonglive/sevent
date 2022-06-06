@@ -8,7 +8,8 @@ cmake .. ^
     -G "MinGW Makefiles" ^
     -DBUILD_EXAMPLES=OFF ^
     -DBUILD_TESTS=OFF ^
-    -DBUILD_RELEASE=OFF ^
-    -DENABLE_OPENSSL=OFF ^
+    -DBUILD_RELEASE=ON ^
+    -DENABLE_OPENSSL=ON ^
     && ^
-make
+make && ^
+make install

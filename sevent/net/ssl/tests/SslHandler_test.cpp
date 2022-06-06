@@ -177,6 +177,7 @@ private:
 };
 
 // 早期测试的实现, 握手完成后, 发送requestStr = "GET / HTTP/1.1"
+// ./SslHandler_test ip port
 int main(int argc, char **argv){
     string ip = "127.0.0.1";
     uint16_t port = 12345;

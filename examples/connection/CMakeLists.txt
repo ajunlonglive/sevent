@@ -1,0 +1,5 @@
+add_executable(connection_maxconnection maxconnection.cpp)
+target_link_libraries(connection_maxconnection sevent_net)
+
+add_executable(connection_idleconnection idleconnection.cpp)
+target_link_libraries(connection_idleconnection sevent_net)

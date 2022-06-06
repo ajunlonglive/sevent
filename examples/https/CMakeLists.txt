@@ -1,0 +1,5 @@
+add_executable(httpsClient httpsClient.cpp)
+target_link_libraries(httpsClient sevent_net)
+
+add_executable(httpsServer httpsServer.cpp)
+target_link_libraries(httpsServer sevent_net)

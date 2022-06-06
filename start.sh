@@ -1,10 +1,23 @@
 #clear && rm -rf ./build/* && cd ./build && cmake .. && make
-#SOURCE_DIR=$(pwd) `pwd`
 clear="clear"
-if [[ $1 = $clear ]]
-then
-rm -rf ./build2/* && cd ./build2 && cmake .. && make
-exit
+build_dir="./build2"
+cmake_dir=$(pwd)
+install_dir=$cmake_dir
+# clear path
+if [[ $1 = $clear ]];then
+rm -r $build_dir/*
 fi
-
-cd ./build2 && cmake .. && make
+# cmake execute path
+if [ ! -d $build_dir ];then
+   mkdir -p $build_dir
+fi
+# cmake
+cd $build_dir && \
+cmake $cmake_dir \
+    -DBUILD_EXAMPLES=OFF \
+    -DBUILD_TESTS=OFF \
+    -DBUILD_RELEASE=ON \
+    -DENABLE_OPENSSL=ON \
+    && \
+make && \
+make install

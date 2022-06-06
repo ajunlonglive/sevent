@@ -33,6 +33,7 @@ public:
         spec.it_value = spec.it_interval;
         int ret = ::timerfd_settime(fd, 0 /* relative timer */, &spec, NULL);
         assert(ret == 0);
+        (void)ret;
     }
 
 private:
@@ -51,6 +52,7 @@ private:
         uint64_t t;
         ssize_t ret = read(fd, &t, sizeof(t));
         assert(ret == sizeof t);
+        (void)ret;
     }
     static struct timespec toTimeSpec(double seconds) {
         struct timespec ts;
@@ -86,5 +88,9 @@ int main() {
     loop.loop();
     return 0;
 }
+
+#else
+// timerfd linux only
+int main() { return 0; }
 
 #endif

@@ -1,0 +1,14 @@
+add_executable(chat_chat_client client.cpp)
+target_link_libraries(chat_chat_client sevent_net)
+
+add_executable(chat_server server.cpp)
+target_link_libraries(chat_server sevent_net)
+
+add_executable(chat_server_efficient server_efficient.cpp)
+target_link_libraries(chat_server_efficient sevent_net)
+
+add_executable(chat_server_highperformance server_highperformance.cpp)
+target_link_libraries(chat_server_highperformance sevent_net)
+
+add_executable(chat_loadtest loadtest.cpp)
+target_link_libraries(chat_loadtest sevent_net)

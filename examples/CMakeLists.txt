@@ -1,0 +1,12 @@
+add_subdirectory(chat)
+add_subdirectory(connection)
+add_subdirectory(filetransfer)
+add_subdirectory(hub)
+add_subdirectory(netty)
+add_subdirectory(pingpong)
+add_subdirectory(simple)
+add_subdirectory(socks4a)
+
+if(ENABLE_OPENSSL)
+  add_subdirectory(https)
+endif()
