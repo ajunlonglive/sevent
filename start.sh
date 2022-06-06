@@ -1,6 +1,6 @@
 #clear && rm -rf ./build/* && cd ./build && cmake .. && make
 clear="clear"
-build_dir="./build2"
+build_dir="./build"
 cmake_dir=$(pwd)
 install_dir=$cmake_dir
 # clear path
