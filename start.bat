@@ -9,7 +9,7 @@ cmake .. ^
     -DBUILD_EXAMPLES=OFF ^
     -DBUILD_TESTS=OFF ^
     -DBUILD_RELEASE=ON ^
-    -DENABLE_OPENSSL=ON ^
+    -DENABLE_OPENSSL=OFF ^
     && ^
 make && ^
 make install

@@ -3,7 +3,7 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 #else
-#include <processthreadsapi.h>
+#include <windows.h>
 #endif
 using namespace std;
 using namespace sevent;

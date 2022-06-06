@@ -103,9 +103,9 @@ void DefaultLogProcessor::beforeMsgToStream(LogEvent &logEv) {
     stream << ' ';
     //线程,后有空格" "
     stream << logEv.getThreadId();
-    //loglevel固定长度为6
+    // loglevel固定长度为6
     stream << StreamItem(LogLevelName[logEv.getLevel()], 6);
-    //errno
+    // errno
     int errNumber = logEv.getErrno();
     if (errNumber) {
         stream << CommonUtil::strerror_tl(errNumber);
@@ -156,24 +156,25 @@ void DefaultLogProcessor::setShowMicroSecond(bool show) {
 /********************************************************************
  *                          LogEvent
  * ******************************************************************/
-LogEvent::LogEvent(const char *file, int line, Logger::Level level,bool isErr)
-    : file(file), line(line), level(level),errNum(0), 
-      time(Timestamp::now()), threadId(CurrentThread::gettidString()) {
-    //参考muduo 5.2章:GCC的strrchr()对于字符串字面量可以在编译期求值
-    #ifndef _WIN32
+LogEvent::LogEvent(const char *file, int line, Logger::Level level, bool isErr)
+    : file(file), line(line), level(level), errNum(0), time(Timestamp::now()),
+      threadId(CurrentThread::gettidString()) {
+//参考muduo 5.2章:GCC的strrchr()对于字符串字面量可以在编译期求值
+#ifndef _WIN32
     const char *slash = strrchr(file, '/');
-    #else
+#else
     const char *slash = strrchr(file, '\\');
-    #endif
+#endif
     if (slash)
         this->file = slash + 1;
     if (isErr)
-    #ifndef _WIN32
+#ifndef _WIN32
         errNum = errno;
-    #else
+#else
         errNum = h_errno; // WSAGetLastError()
-    #endif
-    // FIXME: 在windows下, thread_local LogStream::FixedBuffer好像会未初始化(cur指针为0)?
+#endif
+    // FIXME: 在windows下, thread_local
+    // LogStream::FixedBuffer好像会未初始化(cur指针为0)?
     (void)stream;
 }
 LogStream &LogEvent::initStream() {

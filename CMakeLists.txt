@@ -1,43 +1,56 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.0)
 project(sevent)
 
 # 选项
 option(BUILD_EXAMPLES "build examples" OFF)
 option(BUILD_TESTS "build tests" OFF)
-option(BUILD_RELEASE "build release" OFF)
+option(BUILD_RELEASE "build release" ON)
 option(ENABLE_OPENSSL "enable openssl" OFF)
 
 # 编译选项
-set(CXX_FLAGS
- -pthread
- -g
- -D_FILE_OFFSET_BITS=64
- -Wall
- -Wextra
- -Wconversion
- -Wno-unused-parameter
- -Wold-style-cast
- -Woverloaded-virtual
- -Wpointer-arith
- -Wwrite-strings
- -march=native
- -std=c++17
- #  -Wshadow
- #  -rdynamic
- )
-
-if(CMAKE_BUILD_BITS EQUAL 32)
-  list(APPEND CXX_FLAGS "-m32")
-endif()
-string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CXX_FLAGS}")
-
 if(BUILD_RELEASE)
   set(CMAKE_BUILD_TYPE "Release")
 else()
   set(CMAKE_BUILD_TYPE "Debug")
 endif()
-set(CMAKE_CXX_FLAGS_DEBUG "-O0")
-set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+  set(CXX_FLAGS
+  -pthread
+  -g
+  -D_FILE_OFFSET_BITS=64
+  -Wall
+  -Wextra
+  -Wconversion
+  -Wno-unused-parameter
+  -Wold-style-cast
+  -Woverloaded-virtual
+  -Wpointer-arith
+  -Wwrite-strings
+  -march=native
+  -std=c++17
+  #  -Wshadow
+  #  -rdynamic
+  )
+  set(CMAKE_CXX_FLAGS_DEBUG "-O0")
+  set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
+  if(CMAKE_BUILD_BITS EQUAL 32)
+    list(APPEND CXX_FLAGS "-m32")
+  endif()
+endif()
+# MSVC
+if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+  set(CXX_FLAGS /utf-8 /std:c++17 /EHsc)
+  set(CMAKE_CXX_FLAGS_DEBUG "/Od")
+  set(CMAKE_CXX_FLAGS_RELEASE "/O2 -DNDEBUG")
+endif()
+string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CXX_FLAGS}")
+# 打印编译选项
+string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
+message(STATUS "COMPILER_ID = " ${CMAKE_CXX_COMPILER_ID})
+message(STATUS "BUILD_TYPE = " ${CMAKE_BUILD_TYPE})
+message(STATUS "CXX_FLAGS = " ${CMAKE_CXX_FLAGS} " " ${CMAKE_CXX_FLAGS_${BUILD_TYPE}})
+
 
 # 依赖 openssl
 if(ENABLE_OPENSSL)
@@ -46,8 +59,6 @@ if(ENABLE_OPENSSL)
     include_directories(${OPENSSL_INCLUDE_DIR})
     aux_source_directory(${PROJECT_SOURCE_DIR}/sevent/net/ssl SRC_SSL)
   endif()
-else()
-  set(SRC_SSL "")
 endif()
 
 # 目标文件输出路径

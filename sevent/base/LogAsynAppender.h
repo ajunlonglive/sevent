@@ -34,8 +34,7 @@ public:
 
 private:
     static const int largeBufferSize = 4000 * 1000; // 4MB
-    std::chrono::seconds
-        flushInterval; //若curBuffer未满,默认每间隔3秒,从缓冲区获取数据并写入
+    std::chrono::seconds flushInterval; //若curBuffer未满,默认每间隔3秒,从缓冲区获取数据并写入
     int buffersLimit; //限制写入数据量(largeBufferSize*limit)
 
     std::thread thd;

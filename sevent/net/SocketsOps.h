@@ -5,8 +5,8 @@
 #ifndef _WIN32
 #include <arpa/inet.h>
 #else
+#include <sys/types.h>
 #include <ws2tcpip.h>
-#include <stdio.h>
 #endif
 namespace sevent {
 namespace net {

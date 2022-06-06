@@ -125,7 +125,7 @@ int HttpParser::on_message_complete(http_parser *p) {
 int HttpParser::on_chunk_header(http_parser *) { return 0; }
 int HttpParser::on_chunk_complete(http_parser *) { return 0; }
 void HttpParser::http_parser_set_max_header_size(uint32_t size) {
-    http_parser_set_max_header_size(size);
+    ::http_parser_set_max_header_size(size);
 }
 
 void HttpParser::parseQueryParam(const string &str) {
@@ -237,7 +237,7 @@ void HttpParser::copy(const HttpParser &other) {
     parser = other.parser;
     parser.data = this;
 }
-void HttpParser::copy(const HttpParser &&other) {
+void HttpParser::copy(HttpParser &&other) {
     request = other.request;
     state = other.state;
     parsed = other.parsed;
@@ -250,12 +250,12 @@ void HttpParser::copy(const HttpParser &&other) {
     parser.data = this;
 }
 HttpParser::HttpParser(const HttpParser &other) { copy(other); }
-HttpParser::HttpParser(const HttpParser &&other) { copy(std::move(other)); }
+HttpParser::HttpParser(HttpParser &&other) { copy(std::move(other)); }
 HttpParser &HttpParser::operator=(const HttpParser &other) {
     copy(other);
     return *this;
 }
-HttpParser &HttpParser::operator=(const HttpParser &&other) {
+HttpParser &HttpParser::operator=(HttpParser &&other) {
     copy(std::move(other));
     return *this;
 }

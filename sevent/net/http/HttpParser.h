@@ -18,9 +18,9 @@ class HttpParser {
 public:
     explicit HttpParser(bool isrequest = true);
     HttpParser(const HttpParser &other);
-    HttpParser(const HttpParser &&other);
+    HttpParser(HttpParser &&other);
     HttpParser &operator=(const HttpParser &other);
-    HttpParser &operator=(const HttpParser &&other);
+    HttpParser &operator=(HttpParser &&other);
     ~HttpParser() = default;
 
     // 返回成功解析的字节数, 并设置err
@@ -85,7 +85,7 @@ public:
     Map &getParams() { return params; }
 private:
     void copy(const HttpParser &other);
-    void copy(const HttpParser &&other);
+    void copy(HttpParser &&other);
 
 protected:
     void parseQueryParam(const std::string &str);

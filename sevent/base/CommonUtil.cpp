@@ -7,8 +7,7 @@
 #include <unistd.h>
 #include <strings.h>
 #else
-#include <winsock2.h>
-#include <processthreadsapi.h>
+#include <windows.h>
 #endif
 
 using namespace std;

@@ -45,13 +45,13 @@ private:
 
 class StreamItem{
 public:
-    StreamItem(const char *d,unsigned l):data(d),len(l){}
-    friend LogStream &operator<<(LogStream &stream, StreamItem item){
+    StreamItem(const char *d, int l) : data(d), len(l) {}
+    friend LogStream &operator<<(LogStream &stream, const StreamItem &item){
         stream.append(item.data, item.len);
         return stream;
     }
-    const char* data;
-    const unsigned len;
+    const char *data;
+    const int len;
 };
 
 } // namespace sevent
