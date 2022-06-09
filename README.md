@@ -101,7 +101,9 @@ while(1) {
 
 >  更多信息请阅读源码, 源码有足够的注释
 
-## Codec
+---
+
+## **Codec**
 
 &emsp;&emsp;codec是网络数据与业务数据的间接层, 对数据进行encode/decode. 比如说分包, ssl加解密. sevent可以通过TcpPipeline::addLast(PipelineHandler*)方法进行一个或多个Codec的添加. 
 
