@@ -11,6 +11,7 @@ public:
     Timestamp():microSecond(0){}
     explicit Timestamp(int64_t microSecond):microSecond(microSecond){}
     int64_t getMicroSecond() { return microSecond; }
+    time_t getSecond() { return static_cast<time_t>(microSecond / microSecondUnit); }
     // microseconds since the Epoch, 1970-01-01 00:00:00 +0000 (UTC)
     static Timestamp now();
     std::string toString();

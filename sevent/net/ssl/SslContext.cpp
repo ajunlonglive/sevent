@@ -244,7 +244,7 @@ SslHandler::Status SslHandler::encrypt(Buffer &inbuf, Buffer &outbuf) {
 SslHandler::Status SslHandler::decrypt(Buffer &inbuf, Buffer &outbuf) {
     int n = bioWrite(inbuf);
     if (n <= 0) {
-        LOG_ERROR << "SslHandler::decrypted() - bioWrite failed, ret = " << n;
+        LOG_WARN << "SslHandler::decrypted() - bioWrite failed, ret = " << n;
         return SSL_FAIL;
     }
     // 管理inbuf和outbuf

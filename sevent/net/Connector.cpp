@@ -147,7 +147,14 @@ void Connector::retry() {
                   << ", retry = " << retryCur;
     }
 }
-
+void Connector::closeOnConnecting() {
+    if (state == connecting) {
+        setState(disconnected);
+        Channel::remove();
+        sockets::close(fd);
+        LOG_TRACE << "Connector::closeOnConnecting(), state = connecting, stopped";
+    }  
+}
 void Connector::stop() {
     isStop = true;
     ownerLoop->runInLoop(std::bind(&Connector::stopInLoop, shared_from_this()));
@@ -155,17 +162,30 @@ void Connector::stop() {
 void Connector::stopInLoop() {
     ownerLoop->assertInOwnerThread();
     isStop = true;
-    if (state == connecting) {
-        setState(disconnected);
-        Channel::remove();
-        sockets::close(fd);
-        LOG_TRACE << "Connector::stopInLoop(), state = connecting, stopped";
-    } else if (state == connected) {
+    closeOnConnecting();
+    if (state == connected) {
         LOG_TRACE << "Connector::stopInLoop(), state = connected, stop in TcpConnection(if exist)";
         if (connection)
             connection->handleClose(); // 移除事件
     } else {
         LOG_TRACE << "Connector::stopInLoop(), state = disconnected, do nothing, stopped";
+    }
+}
+
+void Connector::shutdown() {
+    isStop = true;
+    ownerLoop->runInLoop(std::bind(&Connector::shutdownInLoop, shared_from_this()));
+}
+void Connector::shutdownInLoop() {
+    ownerLoop->assertInOwnerThread();
+    isStop = true;
+    closeOnConnecting();
+    if (state == connected) {
+        LOG_TRACE << "Connector::shutdownInLoop(), state = connected, stop in TcpConnection(if exist)";
+        if (connection)
+            connection->shutdown();
+    } else {
+        LOG_TRACE << "Connector::shutdownInLoop(), state = disconnected, do nothing, stopped";
     }
 }
 
@@ -176,12 +196,8 @@ void Connector::forceClose() {
 }
 void Connector::forceCloseInLoop() {
     isStop = true;
-    if (state == connecting) {
-        setState(disconnected);
-        Channel::remove();
-        sockets::close(fd);
-        LOG_TRACE << "Connector::forceCloseInLoop(), state = connecting";
-    } else if (state == connected) {
+    closeOnConnecting();
+    if (state == connected) {
         if (connection)
             connection->forceClose();
         LOG_TRACE << "Connector::forceCloseInLoop(), state = connected";

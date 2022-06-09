@@ -14,7 +14,7 @@ public:
     virtual void onWriteComplete(const TcpConnection::ptr &conn) {}
     virtual void onHighWaterMark(const TcpConnection::ptr &conn, size_t curHight) {}
     virtual ~TcpHandler() = default;
-    // TODO
+    
     // 什么时候会调用onWriteComplete?
         // 发送缓冲区被清空就会调用(低水位回调)
         // 1.在一次send(data,len)中, 若一次发送完全(write return = len), 则会调用

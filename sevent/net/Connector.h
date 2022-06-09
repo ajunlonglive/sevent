@@ -26,6 +26,7 @@ public:
     void connect();
     // 关闭连接, 包括已经连接或正在连接
     void stop();
+    void shutdown();
     void forceClose();
     
     void setTcpHandler(TcpHandler *handler) { tcpHandler = handler; }
@@ -45,8 +46,9 @@ private:
     void doTimeout();
     void onConnection();
     void stopInLoop();
+    void shutdownInLoop();
     void forceCloseInLoop();
-
+    void closeOnConnecting();
 
     void handleWrite() override;
     void handleError() override;

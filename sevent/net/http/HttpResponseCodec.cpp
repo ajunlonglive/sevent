@@ -20,7 +20,7 @@ void HttpResponseCodec::handleMessage(vector<unique_ptr<HttpParser>> &&parserLis
 }
 
 bool HttpResponseCodec::onClose(const TcpConnection::ptr &conn, std::any &msg) {
-    HttpParser *parser = any_cast<HttpParser>(&(conn->getContext("HttpParser")));
+    HttpParser *parser = std::any_cast<HttpParser>(&(conn->getContext("HttpParser")));
     if (parser->isParsing()) {
         LOG_TRACE << "HttpResponseCodec::onClose(), on eof";
         conn->setContext("onClose", true);

@@ -77,7 +77,7 @@ private:
         }
     }
     void onClose(const TcpConnection::ptr &conn) {
-        set<string> &connSub = any_cast<set<string>&>(conn->getContext("subscription"));
+        set<string> &connSub = std::any_cast<set<string>&>(conn->getContext("subscription"));
         for (set<string>::const_iterator it = connSub.begin();
              it != connSub.end();) {
             // doUnsubscribe will erase *it, so increase before calling.
@@ -90,7 +90,7 @@ private:
         doPublish("utc_time", now.toString(), now);      
     }
     void doSubscribe(const TcpConnection::ptr &conn, const string &topic) {
-        set<string> &connSub = any_cast<set<string>&>(conn->getContext("subscription"));
+        set<string> &connSub = std::any_cast<set<string>&>(conn->getContext("subscription"));
         connSub.insert(topic);
         getTopic(topic).add(conn);
     }
@@ -99,7 +99,7 @@ private:
     }
     void doUnsubscribe(const TcpConnection::ptr &conn, const string &topic) {
         LOG_INFO << "unsubscribes " << topic;
-        set<string> &connSub = any_cast<set<string>&>(conn->getContext("subscription"));
+        set<string> &connSub = std::any_cast<set<string>&>(conn->getContext("subscription"));
         getTopic(topic).remove(conn);
         connSub.erase(topic);
     }

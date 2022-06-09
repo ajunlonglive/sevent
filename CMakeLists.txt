@@ -7,6 +7,13 @@ option(BUILD_TESTS "build tests" OFF)
 option(BUILD_RELEASE "build release" ON)
 option(ENABLE_OPENSSL "enable openssl" OFF)
 
+# 检查accept4
+include(CheckFunctionExists)
+check_function_exists(accept4 HAVE_ACCEPT4)
+if(HAVE_ACCEPT4)
+  set_source_files_properties(${PROJECT_SOURCE_DIR}/sevent/net/SocketsOps.cpp PROPERTIES COMPILE_FLAGS "-DHAVE_ACCEPT4")
+endif()
+
 # 编译选项
 if(BUILD_RELEASE)
   set(CMAKE_BUILD_TYPE "Release")

@@ -11,7 +11,7 @@ namespace {
 Buffer * convertBuf(std::any &msg) {
     Buffer *buf = nullptr;
     try {
-        buf = any_cast<Buffer *>(msg);
+        buf = std::any_cast<Buffer *>(msg);
         if (buf == nullptr) {
             LOG_ERROR << "SslCodec::convertBuf(), Buffer* = nullptr";
             return nullptr;
@@ -29,7 +29,7 @@ bool SslCodec::onConnection(const TcpConnection::ptr &conn, std::any &msg) {
     conn->setContext("SslHandler", make_any<SslHandler>(context));
     conn->setContext("ConnectionMsg", std::move(msg)); // FIXME, 会产生副作用(比如any保存内容会析构)
     if (context->isClient()) {
-        SslHandler &sslHandler = any_cast<SslHandler&>(conn->getContext("SslHandler"));
+        SslHandler &sslHandler = std::any_cast<SslHandler&>(conn->getContext("SslHandler"));
         // ClientHello
         SslHandler::Status status = sslHandler.ssldoHandshake();
         if (status == SslHandler::SSL_WANT) {
@@ -48,7 +48,7 @@ bool SslCodec::onMessage(const TcpConnection::ptr &conn, std::any &msg) {
     Buffer *buf = convertBuf(msg);
     if (buf == nullptr)
         return false;
-    SslHandler &sslHandler = any_cast<SslHandler&>(conn->getContext("SslHandler"));
+    SslHandler &sslHandler = std::any_cast<SslHandler&>(conn->getContext("SslHandler"));
     SSL *ssl = sslHandler.getSSL();
     while (buf->readableBytes() > 0) {
         // encrypted -> decrypted
@@ -69,7 +69,7 @@ bool SslCodec::onMessage(const TcpConnection::ptr &conn, std::any &msg) {
                 conn->removeContext("ConnectionMsg");
             }
         } else if (status == SslHandler::SSL_FAIL) {
-            LOG_ERROR << "SslCodec::onMessage() - decrypted failed";
+            LOG_WARN << "SslCodec::onMessage() - decrypted failed";
             conn->shutdown();
             return false;
         } // TODO else if (SSL_CLOSE)
@@ -92,7 +92,7 @@ bool SslCodec::handleWrite(const TcpConnection::ptr &conn, std::any &msg, size_t
     Buffer *buf = convertBuf(msg);
     if (buf == nullptr)
         return false;
-    SslHandler &sslHandler = any_cast<SslHandler&>(conn->getContext("SslHandler"));
+    SslHandler &sslHandler = std::any_cast<SslHandler&>(conn->getContext("SslHandler"));
     // LOG_TRACE << "SslCodec::handleWrite(), read to write = " << buf->readableBytes();
     SSL *ssl = sslHandler.getSSL();
     SslHandler::Status status = sslHandler.encrypt(*buf);
@@ -105,7 +105,7 @@ bool SslCodec::handleWrite(const TcpConnection::ptr &conn, std::any &msg, size_t
             return false;
         }
     } else if (status == SslHandler::SSL_FAIL) {
-        LOG_ERROR << "SslCodec::handleWrite() - decrypted failed";
+        LOG_WARN << "SslCodec::handleWrite() - decrypted failed";
         conn->shutdown();
         return false;
     }

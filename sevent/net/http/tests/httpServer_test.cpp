@@ -18,7 +18,7 @@ using namespace sevent::net::http;
 class HttpRequestHandler : public PipelineHandler {
 public:
     bool onMessage(const TcpConnection::ptr &conn, std::any &msg) override {
-        vector<HttpRequest> &resquestList = any_cast<vector<HttpRequest> &>(msg);
+        vector<HttpRequest> &resquestList = std::any_cast<vector<HttpRequest> &>(msg);
         HttpResponse response(HttpVersion::HTTP_1_1, HttpStatus::HTTP_STATUS_OK);
         response.setHeader("Content-Type", "text/plain");
         response.setHeader("Server", "Sevent");

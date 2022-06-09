@@ -11,7 +11,7 @@ class EventLoop;
 class Channel : noncopyable {
 public:
     Channel(socket_t fd, EventLoop *loop);
-    // virtual ~Channel() = default;
+    virtual ~Channel() = default;
 
     void handleEvent();
     void setRevents(int revt) { revents = revt; }

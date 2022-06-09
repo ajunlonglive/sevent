@@ -86,7 +86,7 @@ int HttpParser::on_url(http_parser *p, const char *at, size_t length) {
 	memset(&u, 0, sizeof(u));
 	int ret = http_parser_parse_url(at, length, 0, &u);
     if (ret != 0) {
-        LOG_ERROR << "HttpParser::on_url() failed, url = " << at;
+        LOG_WARN << "HttpParser::on_url() failed, url = " << at;
         return 1;
     } else {
         unsigned int i;

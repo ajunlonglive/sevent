@@ -128,10 +128,7 @@ public:
     sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::ERROR_,true).initStream()
 #define LOG_SYSFATAL                                                             \
     sevent::LogEvent(__FILE__, __LINE__, sevent::Logger::FATAL,true).initStream()
-//  for test
-#define LOG_LF()                                                               \
-    if (sevent::Logger::getLogLevel() <= sevent::Logger::TRACE)                \
-        Logger::instance().append("\n", 1);
+
 } // namespace sevent
 
 #endif

@@ -35,7 +35,7 @@ private:
         LOG_INFO << "echo " << msg.size() << " bytes, "
                  << "data received at " << conn->getPollTime().toString();
         conn->send(msg);
-        Connection::wptr &wp = any_cast<Connection::wptr&>(conn->getContext("idle"));
+        Connection::wptr &wp = std::any_cast<Connection::wptr&>(conn->getContext("idle"));
         Connection::ptr sp = wp.lock();
         if (sp) {
             // 可以优化: 保存上次插入位置, 检查是否有变化, 有变化则插入新的删除旧的 

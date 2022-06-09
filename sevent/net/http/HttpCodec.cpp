@@ -17,7 +17,7 @@ bool HttpCodec::onConnection(const TcpConnection::ptr &conn, std::any &msg) {
 bool HttpCodec::onMessage(const TcpConnection::ptr &conn, std::any &msg) {
     Buffer *buf;
     try {
-        buf = any_cast<Buffer *>(msg);
+        buf = std::any_cast<Buffer *>(msg);
         if (buf == nullptr) {
             LOG_ERROR << "HttpCodec::onMessage(), Buffer* = nullptr";
             return false;
@@ -27,7 +27,7 @@ bool HttpCodec::onMessage(const TcpConnection::ptr &conn, std::any &msg) {
     }
     bool isContinue = true;
     vector<unique_ptr<HttpParser>> parserList;
-    HttpParser *parser = any_cast<HttpParser>(&(conn->getContext("HttpParser")));
+    HttpParser *parser = std::any_cast<HttpParser>(&(conn->getContext("HttpParser")));
     while (buf->readableBytes() > 0 && isContinue) {
         size_t parsed= parser->execute(buf->peek(), buf->readableBytes());
         if(conn->getContext("onClose").has_value() && !parser->isKeepAlive())
@@ -39,7 +39,7 @@ bool HttpCodec::onMessage(const TcpConnection::ptr &conn, std::any &msg) {
             parserList.emplace_back(p);
         } else {
             if (parser->getErr() != 0){
-                LOG_ERROR << "HttpCodec::onMessage() - parser err, "
+                LOG_WARN << "HttpCodec::onMessage() - parser err, "
                         << parser->getErrName() << ", " << parser->getErrDesc();
                 conn->shutdown();
             }

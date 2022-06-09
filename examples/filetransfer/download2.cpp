@@ -37,7 +37,7 @@ private:
         }
     }
     void onWriteComplete(const TcpConnection::ptr &conn) {
-        FILE *fp = any_cast<FILE*>(conn->getContext(filename));
+        FILE *fp = std::any_cast<FILE*>(conn->getContext(filename));
         size_t n = sendFile(fp, conn);
         if (n <= 0) {
             LOG_INFO << "onWriteComplete finished";
@@ -48,7 +48,7 @@ private:
     }
 
     void onClose(const TcpConnection::ptr &conn) {
-        FILE *fp = any_cast<FILE*>(conn->getContext(filename));
+        FILE *fp = std::any_cast<FILE*>(conn->getContext(filename));
         if (fp)
             fclose(fp);
     }

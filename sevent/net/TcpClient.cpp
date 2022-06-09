@@ -34,7 +34,7 @@ void TcpClient::connect() {
 // 关闭连接, 包括已经连接或正在连接
 void TcpClient::shutdown() {
     started = false;
-    connector->stop();
+    connector->shutdown();
 }
 
 void TcpClient::forceClose() {

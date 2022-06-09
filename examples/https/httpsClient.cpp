@@ -26,7 +26,7 @@ public:
     }
 
     bool onMessage(const TcpConnection::ptr &conn, std::any &msg) {
-        vector<HttpResponse> &responseList = any_cast<vector<HttpResponse> &>(msg);
+        vector<HttpResponse> &responseList = std::any_cast<vector<HttpResponse> &>(msg);
         for (HttpResponse &response : responseList) {
             printf("====== recv-response: ======\n%s", response.toString().c_str());
             printf("\n======    recv-end    ======\n");

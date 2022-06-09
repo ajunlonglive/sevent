@@ -125,7 +125,7 @@ socket_t sockets::accept(socket_t sockfd, struct sockaddr *addr, socklen_t *addr
     socket_t connfd = ::accept(sockfd, addr, addrlen);
     return connfd;
 }
-#ifndef _WIN32
+#ifdef HAVE_ACCEPT4
 socket_t sockets::accept4(socket_t sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags) {
     socket_t connfd = ::accept4(sockfd, addr, addrlen, flags);
     return connfd;
@@ -216,7 +216,7 @@ void sockets::setKeepAlive(socket_t sockfd, bool on) {
 }
 int sockets::dolisten(socket_t sockfd) { return sockets::listen(sockfd, SOMAXCONN); }
 socket_t sockets::doaccept(socket_t sockfd, struct sockaddr *addr, socklen_t *addrlen) {
-    #ifndef _WIN32
+    #ifdef HAVE_ACCEPT4
     socket_t connfd = sockets::accept4(sockfd, addr, addrlen, SOCK_NONBLOCK | SOCK_CLOEXEC);
     #else
     socket_t connfd = sockets::accept(sockfd, addr, addrlen);

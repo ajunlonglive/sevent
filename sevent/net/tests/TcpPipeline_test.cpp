@@ -15,7 +15,7 @@ using namespace sevent::net;
 class MyHandler1 : public PipelineHandler {
 public:
     bool onMessage(const TcpConnection::ptr &conn, std::any &msg) override {
-        Buffer *buf = any_cast<Buffer *>(msg);
+        Buffer *buf = std::any_cast<Buffer *>(msg);
         size_t size = buf->readableBytes();
         if (size > 5) {
             LOG_INFO << "MyHandler1 recv too much, size = " << size << " bytes";
@@ -29,7 +29,7 @@ public:
         return true;
     }
     bool handleWrite(const TcpConnection::ptr &conn, std::any &msg, size_t &size) override { 
-        string &s = any_cast<string&>(msg);
+        string &s = std::any_cast<string&>(msg);
         s += "MyHandler1\n";
         // msg = string -> const char*
         // msg = s.c_str();
@@ -47,7 +47,7 @@ public:
     }
 
     bool onMessage(const TcpConnection::ptr &conn, std::any &msg) override {
-        string &s = any_cast<string &>(msg);
+        string &s = std::any_cast<string &>(msg);
         LOG_INFO << "MyHandler2 recv " << s.size() << " bytes : " << s.substr(0, s.size()-2);
         Buffer buf;
         buf.append(s.substr(0, s.size()-2));
@@ -62,7 +62,7 @@ public:
     }
     bool handleWrite(const TcpConnection::ptr &conn, std::any &msg, size_t &size) override { 
         // msg = Buffer -> string
-        Buffer &s = any_cast<Buffer&>(msg);
+        Buffer &s = std::any_cast<Buffer&>(msg);
         msg = std::move(s.readAllAsString());
         return true; 
     }

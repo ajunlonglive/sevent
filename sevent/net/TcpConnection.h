@@ -51,6 +51,7 @@ public:
     bool isReading() const { return isRead; }
     bool isConnected() const { return state & connected; }
 
+    // FIXME: context/setxx 方法是非线程安全
     std::unordered_map<std::string, std::any> &getContext() { return context; }
     std::any &getContext(const std::string &key) { return context[key]; }
     void setContext(const std::string &key, std::any &value) { context[key] = value;}

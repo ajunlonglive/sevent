@@ -7,7 +7,7 @@ using namespace sevent::net;
 
 TcpPipeline &TcpPipeline::addLast(PipelineHandler *next) {
     if (next == nullptr) {
-        LOG_ERROR << "TcpPipeline::addLast() - PipelineHandler is nullptr";
+        LOG_WARN << "TcpPipeline::addLast() - PipelineHandler is nullptr";
         return *this;
     }
     PipelineHandler *prev = handlers.back();
@@ -95,15 +95,15 @@ void PipelineHandler::write(const TcpConnection::ptr &conn, std::any &msg, size_
         const type_info &t = msg.type();
         try{
             if (t == typeid(string)) {
-                conn->send(any_cast<string&>(msg));
+                conn->send(std::any_cast<string&>(msg));
             } else if (t == typeid(string*)) {
-                conn->send(*any_cast<string*>(msg));
+                conn->send(*std::any_cast<string*>(msg));
             } else if (t == typeid(Buffer*)) {
-                conn->send(any_cast<Buffer*>(msg));
+                conn->send(std::any_cast<Buffer*>(msg));
             } else if (t == typeid(Buffer)) {
-                conn->send(any_cast<Buffer&>(msg));
+                conn->send(std::any_cast<Buffer&>(msg));
             } else if (t == typeid(const char*)) {
-                conn->send(any_cast<const char*>(msg), size);
+                conn->send(std::any_cast<const char*>(msg), size);
             } else {
                 //onError? TODO
             }
