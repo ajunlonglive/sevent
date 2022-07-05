@@ -169,8 +169,10 @@ SslHandler::Status SslHandler::getSslStatus(int ret) {
             LOG_TRACE << "SslHandler::getSslStatus() - SSL_ERROR_ZERO_RETURN";
             return SSL_CLOSE;
         default:
-            LOG_ERROR << "SslHandler::getSslStatus() - SSL_ERROR_FAILED, code = " << code;
-        return SSL_FAIL;
+            LOG_ERROR
+                << "SslHandler::getSslStatus() - SSL_ERROR_FAILED, code = "
+                << code << ", " << SslContext::getErrStr();
+            return SSL_FAIL;
     }
 }
 

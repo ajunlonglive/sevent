@@ -23,13 +23,19 @@ Buffer * convertBuf(std::any &msg) {
 }
 }
 
-SslCodec::SslCodec(SslContext *ctx) : context(ctx) {}
+SslCodec::SslCodec(SslContext *ctx) : context(ctx), hostname("") {}
+SslCodec::SslCodec(SslContext *ctx, const std::string &hostname) : context(ctx), hostname(hostname) {}
 
+#pragma GCC diagnostic ignored "-Wold-style-cast"
 bool SslCodec::onConnection(const TcpConnection::ptr &conn, std::any &msg) {
     conn->setContext("SslHandler", make_any<SslHandler>(context));
     conn->setContext("ConnectionMsg", std::move(msg)); // FIXME, 会产生副作用(比如any保存内容会析构)
     if (context->isClient()) {
         SslHandler &sslHandler = std::any_cast<SslHandler&>(conn->getContext("SslHandler"));
+        // 处理一个ip对应多个hostname: sslv3 alert handshake failure
+        // https://github.com/openssl/openssl/issues/7147
+        if (hostname.length())
+            SSL_set_tlsext_host_name(sslHandler.getSSL(), hostname.data());
         // ClientHello
         SslHandler::Status status = sslHandler.ssldoHandshake();
         if (status == SslHandler::SSL_WANT) {
@@ -43,6 +49,7 @@ bool SslCodec::onConnection(const TcpConnection::ptr &conn, std::any &msg) {
     }
     return false;    
 }
+#pragma GCC diagnostic warning "-Wold-style-cast"
 
 bool SslCodec::onMessage(const TcpConnection::ptr &conn, std::any &msg) {
     Buffer *buf = convertBuf(msg);
